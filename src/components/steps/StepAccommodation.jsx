@@ -405,14 +405,18 @@ export default function StepAccommodation() {
 
   // Floor management
   const [newFloorName, setNewFloorName] = useState('');
+  const [newFloorLabel, setNewFloorLabel] = useState('');
 
   const addFloor = () => {
-    const nextNum = acc.floors.length + 1;
-    const name = newFloorName.trim() || `Floor ${nextNum}`;
-    const floor = { id: `fl-${generateId()}`, number: nextNum, name, corridors: [] };
+    const nextNum = String(acc.floors.length + 1);
+    const rawLabel = newFloorLabel.trim().toUpperCase();
+    const label = rawLabel || nextNum;
+    const name = newFloorName.trim() || `Floor ${label}`;
+    const floor = { id: `fl-${generateId()}`, number: label, name, corridors: [] };
     dispatch({ type: 'ADD_FLOOR', floor });
     setExpandedFloors(prev => new Set([...prev, floor.id]));
     setNewFloorName('');
+    setNewFloorLabel('');
   };
 
   const removeFloor = (floorId, floorName) => {
@@ -428,6 +432,10 @@ export default function StepAccommodation() {
 
   const updateFloorName = (floorId, name) => {
     dispatch({ type: 'UPDATE_FLOOR', floor: { id: floorId, name } });
+  };
+
+  const updateFloorNumber = (floorId, number) => {
+    dispatch({ type: 'UPDATE_FLOOR', floor: { id: floorId, number } });
   };
 
   // Corridor management
@@ -572,6 +580,7 @@ export default function StepAccommodation() {
                 floor={floor}
                 index={i}
                 onNameChange={name => updateFloorName(floor.id, name)}
+                onLabelChange={number => updateFloorNumber(floor.id, number)}
                 onRemove={() => removeFloor(floor.id, floor.name || `Floor ${floor.number}`)}
               />
             ))}
@@ -581,11 +590,19 @@ export default function StepAccommodation() {
           <div className="add-floor-row">
             <input
               className="form-input"
-              placeholder="Floor name (e.g. Floor 1, Ground Floor…)"
+              placeholder="G, 1, 2…"
+              value={newFloorLabel}
+              onChange={e => setNewFloorLabel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addFloor()}
+              style={{ width: 64, flexShrink: 0, textAlign: 'center' }}
+            />
+            <input
+              className="form-input"
+              placeholder="Floor name (optional)"
               value={newFloorName}
               onChange={e => setNewFloorName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addFloor()}
-              style={{ flex:1, maxWidth:280 }}
+              style={{ flex:1, maxWidth:240 }}
             />
             <button className="btn btn-outline btn-sm" onClick={addFloor}>
               + Add floor
@@ -716,15 +733,36 @@ export default function StepAccommodation() {
 }
 
 /* ── Floor row (inline name edit) ── */
-function FloorRow({ floor, index, onNameChange, onRemove }) {
+function FloorRow({ floor, index, onNameChange, onRemove, onLabelChange }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(floor.name || `Floor ${floor.number}`);
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelVal, setLabelVal] = useState(String(floor.number));
 
   const save = () => { onNameChange(val.trim() || `Floor ${floor.number}`); setEditing(false); };
+  const saveLabel = () => {
+    const v = labelVal.trim().toUpperCase();
+    if (v) onLabelChange(v);
+    setEditingLabel(false);
+  };
 
   return (
     <div className="floor-list-row">
-      <span className="floor-number-badge">{floor.number}</span>
+      {editingLabel ? (
+        <input
+          className="form-input floor-number-badge"
+          value={labelVal}
+          onChange={e => setLabelVal(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') saveLabel(); if (e.key === 'Escape') setEditingLabel(false); }}
+          onBlur={saveLabel}
+          autoFocus
+          style={{ width: 48, textAlign: 'center', padding: '2px 4px', fontSize: 12, fontWeight: 700 }}
+        />
+      ) : (
+        <span className="floor-number-badge" title="Click to edit floor number" onClick={() => { setLabelVal(String(floor.number)); setEditingLabel(true); }} style={{ cursor: 'pointer' }}>
+          {floor.number}
+        </span>
+      )}
       {editing ? (
         <>
           <input

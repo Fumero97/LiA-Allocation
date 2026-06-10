@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getCenters, createCenter, getUsers, loadCenterState, saveCenterState } from '../../firebase';
 import { parseAccommodationExcel, downloadAccommodationTemplate } from '../../utils/excel';
+import AccommodationPreviewModal from '../../components/AccommodationPreviewModal';
 
 export default function AdminCentres({ onEnterCentre }) {
   const [centres, setCentres] = useState([]);
@@ -11,6 +12,7 @@ export default function AdminCentres({ onEnterCentre }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [importState, setImportState] = useState({}); // { [centreId]: 'importing' | 'done' | 'error' }
+  const [pendingImport, setPendingImport] = useState(null); // { centreId, accommodation }
   const fileRefs = useRef({});
 
   const load = async () => {
@@ -45,6 +47,20 @@ export default function AdminCentres({ onEnterCentre }) {
     setImportState(s => ({ ...s, [centreId]: 'importing' }));
     try {
       const accommodation = await parseAccommodationExcel(file);
+      setImportState(s => ({ ...s, [centreId]: null }));
+      setPendingImport({ centreId, accommodation });
+    } catch (err) {
+      setImportState(s => ({ ...s, [centreId]: 'error' }));
+      setTimeout(() => setImportState(s => ({ ...s, [centreId]: null })), 3000);
+    }
+    if (fileRefs.current[centreId]) fileRefs.current[centreId].value = '';
+  };
+
+  const handleConfirmImport = async () => {
+    const { centreId, accommodation } = pendingImport;
+    setPendingImport(null);
+    setImportState(s => ({ ...s, [centreId]: 'importing' }));
+    try {
       const newSnap = {
         id: `acc-${Date.now()}`,
         name: accommodation.name,
@@ -60,9 +76,7 @@ export default function AdminCentres({ onEnterCentre }) {
     } catch (err) {
       setImportState(s => ({ ...s, [centreId]: 'error' }));
       setTimeout(() => setImportState(s => ({ ...s, [centreId]: null })), 3000);
-      console.error(err);
     }
-    if (fileRefs.current[centreId]) fileRefs.current[centreId].value = '';
   };
 
   const managersOf = (centreId) => users.filter(u =>
@@ -74,6 +88,13 @@ export default function AdminCentres({ onEnterCentre }) {
 
   return (
     <div style={{ padding: 32, maxWidth: 960 }}>
+      {pendingImport && (
+        <AccommodationPreviewModal
+          accommodation={pendingImport.accommodation}
+          onConfirm={handleConfirmImport}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 13, color: '#64748b' }}>{centres.length} centre{centres.length !== 1 ? 's' : ''} registered</div>

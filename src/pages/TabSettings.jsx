@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useApp } from '../store';
 import StepAccommodation from '../components/steps/StepAccommodation';
+import AccommodationPreviewModal from '../components/AccommodationPreviewModal';
 import { formatDate } from '../lib/dateUtils';
 import { downloadAccommodationTemplate, parseAccommodationExcel } from '../utils/excel';
 
@@ -14,6 +15,7 @@ export default function TabSettings() {
   const [editingAccommodationId, setEditingAccommodationId] = useState(null);
   const [importError, setImportError] = useState('');
   const [importing, setImporting] = useState(false);
+  const [previewAccommodation, setPreviewAccommodation] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImportExcel = async (e) => {
@@ -25,13 +27,18 @@ export default function TabSettings() {
     setImporting(true);
     try {
       const accommodation = await parseAccommodationExcel(file);
-      dispatch({ type: 'SET_ACCOMMODATION', payload: accommodation });
-      dispatch({ type: 'SAVE_ACCOMMODATION', name: accommodation.name });
+      setPreviewAccommodation(accommodation);
     } catch (err) {
       setImportError(err.message);
     } finally {
       setImporting(false);
     }
+  };
+
+  const handleConfirmImport = () => {
+    dispatch({ type: 'SET_ACCOMMODATION', payload: previewAccommodation });
+    dispatch({ type: 'SAVE_ACCOMMODATION', name: previewAccommodation.name });
+    setPreviewAccommodation(null);
   };
 
   const updateRow = (i, field, value) =>
@@ -108,6 +115,13 @@ export default function TabSettings() {
 
   return (
     <div className="saas-tab-content">
+      {previewAccommodation && (
+        <AccommodationPreviewModal
+          accommodation={previewAccommodation}
+          onConfirm={handleConfirmImport}
+          onCancel={() => setPreviewAccommodation(null)}
+        />
+      )}
       <div className="saas-header">
         <h1>Settings</h1>
       </div>

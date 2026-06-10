@@ -2904,7 +2904,7 @@
   border: 1px solid rgba(255,255,255,0.2);
 }
 @media print {
-  .app-header, .app-footer, .step-header, .tab-bar, .rp-toolbar, .no-print {
+  .app-header, .app-footer, .step-header, .tab-bar, .rp-toolbar, .no-print, .saas-sidebar {
     display: none !important;
   }
   .app-main, .saas-tab-content, .step-container {

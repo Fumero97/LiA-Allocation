@@ -331,7 +331,7 @@ export function parseAccommodationExcel(file) {
           if (!rawRoom) continue;
           if (!buildingName && rawBuilding) buildingName = rawBuilding;
 
-          const floorNum = parseInt(rawFloor) || 1;
+          const floorNum = String(rawFloor || '1').trim();
           const corridorName = rawCorridor || `Piano ${floorNum}`;
 
           const validTypes = ['standard', 'single', 'double', 'triple', 'quad', 'suite'];
@@ -360,7 +360,6 @@ export function parseAccommodationExcel(file) {
         }
 
         const floors = [...floorMap.entries()]
-          .sort(([a], [b]) => a - b)
           .map(([floorNum, corridorMap]) => ({
             id: 'fl-' + Math.random().toString(36).slice(2, 10),
             number: floorNum,
