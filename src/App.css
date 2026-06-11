@@ -2903,11 +2903,43 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   border: 1px solid rgba(255,255,255,0.2);
 }
+.rp-print-header {
+  display: none;
+}
+.rp-print-only {
+  display: none;
+}
+.rp-screen-only {
+  display: block;
+}
+
 @media print {
-  .app-header, .app-footer, .step-header, .tab-bar, .rp-toolbar, .no-print, .saas-sidebar {
+  .app-header, .app-footer, .step-header, .tab-bar, .rp-toolbar, .no-print,
+  .saas-sidebar, .saas-stepper-header {
     display: none !important;
   }
-  .app-main, .saas-tab-content, .step-container {
+  .rp-print-header {
+    display: block !important;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+  }
+  .rp-print-only {
+    display: block !important;
+  }
+  .rp-screen-only {
+    display: none !important;
+  }
+  * {
+    overflow: visible !important;
+  }
+  body, html, .saas-layout, .saas-main, .saas-tab-content, .saas-pane,
+  .step-container, .stepper-content, .app-main {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+  .app-main, .saas-tab-content, .saas-pane, .step-container, .stepper-content {
     padding: 0 !important;
     margin: 0 !important;
     background: #fff !important;

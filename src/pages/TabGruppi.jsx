@@ -190,6 +190,12 @@ export default function TabGruppi() {
     });
   };
 
+  const handleDeleteGroupGuest = (guestId, listId) => {
+    const list = state.savedGuestLists.find(l => l.id === listId);
+    if (!list) return;
+    dispatch({ type: 'UPDATE_GUEST_LIST_CONTENT', listId, guests: list.guests.filter(g => g.id !== guestId) });
+  };
+
   const rawGroupNames = useMemo(() => [...new Set(allGuests.map(g => g.group).filter(Boolean))], [allGuests]);
   const unlinked      = rawGroupNames.filter(n => !state.savedGroups.some(g => g.name === n));
   const knownAgenti   = useMemo(() => [...new Set(state.savedGroups.map(g => g.agente).filter(Boolean))], [state.savedGroups]);
@@ -258,6 +264,7 @@ export default function TabGruppi() {
         onBack={() => setViewingId(null)}
         onEdit={handleEdit}
         onUpdateGuests={handleUpdateGroupGuests}
+        onDeleteGuest={handleDeleteGroupGuest}
       />
     );
   }

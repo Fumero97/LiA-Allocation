@@ -26,19 +26,19 @@ function SavedPlanModal({ alloc, onClose, onExport }) {
         <div className="modal-header">
           <div>
             <h2 style={{ marginBottom:2 }}>{alloc.name}</h2>
-            <span style={{ fontSize:12, color:'var(--gray-400)' }}>Salvata il {formatDate(alloc.date)} · {accommodation.name}</span>
+            <span style={{ fontSize:12, color:'var(--gray-400)' }}>Saved on {formatDate(alloc.date)} · {accommodation.name}</span>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button className="btn btn-success btn-sm" onClick={onExport}>⬇️ Esporta Excel</button>
+            <button className="btn btn-success btn-sm" onClick={onExport}>⬇️ Export Excel</button>
             <button className="modal-close" onClick={onClose}>×</button>
           </div>
         </div>
 
         {/* Summary bar */}
         <div style={{ padding:'10px 24px', background:'var(--gray-50)', borderBottom:'1px solid var(--gray-200)', display:'flex', gap:20, fontSize:13, color:'var(--gray-600)', flexWrap:'wrap' }}>
-          <span><strong style={{ color:'var(--gray-900)' }}>{guests.length}</strong> ospiti</span>
-          <span><strong style={{ color:'var(--success-600)' }}>{assigned.length}</strong> assegnati</span>
-          {unassigned.length > 0 && <span style={{ color:'var(--warning-500)' }}><strong>{unassigned.length}</strong> non assegnati</span>}
+          <span><strong style={{ color:'var(--gray-900)' }}>{guests.length}</strong> guests</span>
+          <span><strong style={{ color:'var(--success-600)' }}>{assigned.length}</strong> assigned</span>
+          {unassigned.length > 0 && <span style={{ color:'var(--warning-500)' }}><strong>{unassigned.length}</strong> unassigned</span>}
           {groups.map(gr => (
             <span key={gr} style={{ display:'flex', alignItems:'center', gap:4 }}>
               <span style={{ width:8, height:8, borderRadius:'50%', background:colorMap[gr], display:'inline-block' }} />
@@ -55,14 +55,14 @@ function SavedPlanModal({ alloc, onClose, onExport }) {
             return (
               <div key={floor.id} style={{ marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px', background:'linear-gradient(135deg, var(--primary-600), var(--primary-800))', borderRadius:'var(--radius-md)', marginBottom:10, color:'#fff' }}>
-                  <span style={{ fontWeight:800, fontSize:14 }}>{floor.name || `Piano ${floor.number}`}</span>
-                  {ageRange && <span style={{ fontSize:12, background:'rgba(255,255,255,.2)', padding:'2px 8px', borderRadius:99 }}>età {ageRange}</span>}
-                  <span style={{ fontSize:12, marginLeft:'auto', opacity:.75 }}>{floorGuests.length} ospiti</span>
+                  <span style={{ fontWeight:800, fontSize:14 }}>{floor.name || `Floor ${floor.number}`}</span>
+                  {ageRange && <span style={{ fontSize:12, background:'rgba(255,255,255,.2)', padding:'2px 8px', borderRadius:99 }}>age {ageRange}</span>}
+                  <span style={{ fontSize:12, marginLeft:'auto', opacity:.75 }}>{floorGuests.length} guests</span>
                 </div>
                 {floor.corridors.map(corridor => (
                   <div key={corridor.id} style={{ marginBottom:10, marginLeft:8 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'var(--gray-400)', textTransform:'uppercase', letterSpacing:.5, marginBottom:6 }}>
-                      Corridoio {corridor.name}
+                      Corridor {corridor.name}
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                       {corridor.rooms.map(room => {
@@ -82,9 +82,9 @@ function SavedPlanModal({ alloc, onClose, onExport }) {
                             </div>
                             <div style={{ padding:'4px 6px 6px' }}>
                               {isUnavail ? (
-                                <div style={{ fontSize:11, color:'var(--danger-400)', textAlign:'center', padding:'8px 0' }}>Non disponibile</div>
+                                <div style={{ fontSize:11, color:'var(--danger-400)', textAlign:'center', padding:'8px 0' }}>Unavailable</div>
                               ) : rg.length === 0 ? (
-                                <div style={{ fontSize:11, color:'var(--gray-300)', textAlign:'center', padding:'8px 0', fontStyle:'italic' }}>Vuota</div>
+                                <div style={{ fontSize:11, color:'var(--gray-300)', textAlign:'center', padding:'8px 0', fontStyle:'italic' }}>Empty</div>
                               ) : rg.map(g => (
                                 <div key={g.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 2px', borderRadius:4 }}>
                                   <div style={{
@@ -119,7 +119,7 @@ function SavedPlanModal({ alloc, onClose, onExport }) {
 
           {unassigned.length > 0 && (
             <div style={{ background:'var(--warning-50)', border:'1px solid #fde68a', borderRadius:'var(--radius-md)', padding:'12px 16px' }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'#92400e', marginBottom:6 }}>⚠ Ospiti non assegnati</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#92400e', marginBottom:6 }}>⚠ Unassigned guests</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {unassigned.map(g => (
                   <span key={g.id} style={{ background:'#fff', border:'1px solid #fde68a', borderRadius:99, padding:'2px 10px', fontSize:12, color:'#92400e' }}>
@@ -145,13 +145,13 @@ export default function SavedAllocationsDrawer({ onClose }) {
   const [newProjectConfirm, setNewProjectConfirm] = useState(false);
 
   const handleDelete = (id, name) => {
-    if (window.confirm(`Eliminare l'allocazione "${name}"?`)) {
+    if (window.confirm(`Delete allocation "${name}"?`)) {
       dispatch({ type: 'DELETE_ALLOCATION', id });
     }
   };
 
   const handleLoad = (id, name) => {
-    if (window.confirm(`Vuoi caricare l'allocazione "${name}" sovrascrivendo l'area di lavoro corrente?`)) {
+    if (window.confirm(`Load allocation "${name}" and overwrite the current workspace?`)) {
       dispatch({ type: 'LOAD_ALLOCATION', id });
       onClose();
     }
@@ -171,8 +171,8 @@ export default function SavedAllocationsDrawer({ onClose }) {
       <div className="drawer-panel">
         <div className="drawer-header">
           <div>
-            <h2 style={{ fontSize:16, marginBottom:2 }}>Allocazioni salvate</h2>
-            <span style={{ fontSize:12, color:'var(--gray-400)' }}>{savedAllocations.length} {savedAllocations.length===1?'allocazione':'allocazioni'}</span>
+            <h2 style={{ fontSize:16, marginBottom:2 }}>Saved allocations</h2>
+            <span style={{ fontSize:12, color:'var(--gray-400)' }}>{savedAllocations.length} {savedAllocations.length===1?'allocation':'allocations'}</span>
           </div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
@@ -182,16 +182,16 @@ export default function SavedAllocationsDrawer({ onClose }) {
           {!newProjectConfirm ? (
             <button className="btn btn-outline btn-sm" style={{ width:'100%', justifyContent:'center' }}
               onClick={() => setNewProjectConfirm(true)}>
-              🆕 Nuovo progetto
+              🆕 New project
             </button>
           ) : (
             <div style={{ background:'var(--warning-50)', border:'1px solid #fde68a', borderRadius:'var(--radius-md)', padding:'10px 12px' }}>
               <p style={{ fontSize:13, color:'#92400e', marginBottom:8 }}>
-                Resetta accommodation, ospiti e regole. Le allocazioni salvate rimarranno intatte.
+                Resets accommodation, guests and rules. Saved allocations will remain intact.
               </p>
               <div style={{ display:'flex', gap:8 }}>
-                <button className="btn btn-danger btn-sm" onClick={handleNewProject}>Conferma reset</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setNewProjectConfirm(false)}>Annulla</button>
+                <button className="btn btn-danger btn-sm" onClick={handleNewProject}>Confirm reset</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setNewProjectConfirm(false)}>Cancel</button>
               </div>
             </div>
           )}
@@ -202,8 +202,8 @@ export default function SavedAllocationsDrawer({ onClose }) {
           {savedAllocations.length === 0 ? (
             <div style={{ padding:'32px 20px', textAlign:'center', color:'var(--gray-400)' }}>
               <div style={{ fontSize:32, marginBottom:8 }}>💾</div>
-              <p style={{ fontSize:13 }}>Nessuna allocazione salvata.</p>
-              <p style={{ fontSize:12, marginTop:4 }}>Usa "Salva allocazione" nella vista Allocation.</p>
+              <p style={{ fontSize:13 }}>No saved allocations.</p>
+              <p style={{ fontSize:12, marginTop:4 }}>Use "Save allocation" in the Allocation view.</p>
             </div>
           ) : savedAllocations.map(alloc => {
             const assigned = alloc.guests.filter(g => g.roomId).length;
@@ -221,14 +221,14 @@ export default function SavedAllocationsDrawer({ onClose }) {
                   <button
                     className="btn btn-danger-outline btn-xs"
                     onClick={() => handleDelete(alloc.id, alloc.name)}
-                    title="Elimina"
+                    title="Delete"
                   >🗑</button>
                 </div>
 
                 {/* Progress */}
                 <div style={{ marginTop:8 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--gray-500)', marginBottom:3 }}>
-                    <span>{assigned}/{total} assegnati</span>
+                    <span>{assigned}/{total} assigned</span>
                     <span>{pct}%</span>
                   </div>
                   <div style={{ height:4, background:'var(--gray-200)', borderRadius:4, overflow:'hidden' }}>
@@ -240,11 +240,11 @@ export default function SavedAllocationsDrawer({ onClose }) {
                 <div style={{ display:'flex', gap:6, marginTop:10 }}>
                   <button className="btn btn-outline btn-sm" style={{ flex:1, justifyContent:'center' }}
                     onClick={() => setViewingAlloc(alloc)}>
-                    👁 Visualizza
+                    👁 View
                   </button>
                   <button className="btn btn-primary btn-sm" style={{ flex:1, justifyContent:'center' }}
                     onClick={() => handleLoad(alloc.id, alloc.name)}>
-                    📂 Carica
+                    📂 Load
                   </button>
                   <button className="btn btn-success btn-sm"
                     onClick={() => exportAllocation(alloc.guests, alloc.accommodation)}>

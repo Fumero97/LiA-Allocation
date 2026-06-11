@@ -4,7 +4,11 @@ import { parseItalianDateForBooking } from '../lib/dateUtils';
 
 export default function TabBooking() {
   const { state } = useApp();
-  const [selectedIds, setSelectedIds] = useState(state.selectedAccommodationId ? [state.selectedAccommodationId] : []);
+  const [selectedIds, setSelectedIds] = useState(
+    state.selectedAccommodationId
+      ? [state.selectedAccommodationId]
+      : state.savedAccommodations.map(a => a.id)
+  );
   const [globalSearch, setGlobalSearch] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');

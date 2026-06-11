@@ -83,33 +83,33 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 600 }}>
         <div className="modal-header">
-          <h2>{guest.name ? 'Modifica Ospite' : 'Aggiungi Ospite'}</h2>
+          <h2>{guest.name ? 'Edit Guest' : 'Add Guest'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
           <div className="form-row cols-2">
             <div className="form-group">
               <label className="form-label">Group</label>
-              <input className="form-input" value={draft.group} onChange={e => set('group', e.target.value)} placeholder="es. Group A" />
+              <input className="form-input" value={draft.group} onChange={e => set('group', e.target.value)} placeholder="e.g. Group A" />
             </div>
             <div className="form-group">
               <label className="form-label">ID</label>
-              <input className="form-input" value={draft.externalId} onChange={e => set('externalId', e.target.value)} placeholder="es. ST001" />
+              <input className="form-input" value={draft.externalId} onChange={e => set('externalId', e.target.value)} placeholder="e.g. ST001" />
             </div>
           </div>
           <div className="form-row cols-2">
             <div className="form-group">
               <label className="form-label">Forename *</label>
-              <input className="form-input" value={draft.name} onChange={e => setName('name', e.target.value)} placeholder="Nome" />
+              <input className="form-input" value={draft.name} onChange={e => setName('name', e.target.value)} placeholder="First name" />
             </div>
             <div className="form-group">
               <label className="form-label">Surname *</label>
-              <input className="form-input" value={draft.surname} onChange={e => setName('surname', e.target.value)} placeholder="Cognome" />
+              <input className="form-input" value={draft.surname} onChange={e => setName('surname', e.target.value)} placeholder="Surname" />
             </div>
           </div>
           <div className="form-group">
             <label className="form-label">Full Name</label>
-            <input className="form-input" value={draft.fullName} onChange={e => set('fullName', e.target.value)} placeholder="Auto-generato da Forename + Surname" />
+            <input className="form-input" value={draft.fullName} onChange={e => set('fullName', e.target.value)} placeholder="Auto-generated from Forename + Surname" />
           </div>
           <div className="form-row cols-3">
             <div className="form-group">
@@ -125,7 +125,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
             </div>
             <div className="form-group">
               <label className="form-label">DOB</label>
-              <input className="form-input" value={draft.dob} onChange={e => set('dob', e.target.value)} placeholder="gg/mm/aaaa" />
+              <input className="form-input" value={draft.dob} onChange={e => set('dob', e.target.value)} placeholder="dd/mm/yyyy" />
             </div>
             <div className="form-group">
               <label className="form-label">Role (18+)</label>
@@ -135,7 +135,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
                 disabled={(parseInt(draft.age) || 0) < 18}
                 onChange={e => set('role', e.target.value)}
               >
-                <option value="">— Nessuno</option>
+                <option value="">— None</option>
                 <option value="GL">GL (Group Leader)</option>
                 <option value="LiA">LiA (Leader in Action)</option>
               </select>
@@ -146,7 +146,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
           {(rawMedical || rawPrivateNotes) && (
             <div style={{ padding: '10px 14px', border: '1px solid var(--gray-200)', borderRadius: 8, background: 'var(--gray-50)', marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gray-400)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                📋 Dati Importati
+                📋 Imported Data
               </div>
               {rawMedical && (
                 <div style={{ marginBottom: rawPrivateNotes ? 8 : 0 }}>
@@ -166,7 +166,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
           {/* ── Dati Standardizzati ── */}
           <div style={{ padding: '12px 14px', border: '1px solid var(--primary-100)', borderRadius: 8, background: 'var(--primary-50)', marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--primary-700)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              ✅ Dati Standardizzati
+              ✅ Standardised Data
             </div>
 
             {/* Travel With */}
@@ -182,7 +182,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
                 </div>
               ) : (
                 <div style={{ fontSize: 12, color: 'var(--gray-300)', fontStyle: 'italic', marginTop: 4 }}>
-                  Nessun collegamento — gestisci da List Improver
+                  No link — manage from List Improver
                 </div>
               )}
             </div>
@@ -203,7 +203,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
               <input
                 className="form-input mini"
                 style={{ height: 28, fontSize: 11 }}
-                placeholder="Aggiungi allergia e premi Invio..."
+                placeholder="Add allergy and press Enter..."
                 value={allergyInput}
                 onChange={e => setAllergyInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && allergyInput.trim()) addTag('allergy', allergyInput, setAllergyInput); }}
@@ -226,7 +226,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
               <input
                 className="form-input mini"
                 style={{ height: 28, fontSize: 11 }}
-                placeholder="Aggiungi condizione medica e premi Invio..."
+                placeholder="Add medical condition and press Enter..."
                 value={medicalInput}
                 onChange={e => setMedicalInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && medicalInput.trim()) addTag('medical', medicalInput, setMedicalInput); }}
@@ -242,7 +242,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
             </div>
             <div className="form-group">
               <label className="form-label">Arrival Date</label>
-              <input className="form-input" value={draft.arrivalDate} onChange={e => set('arrivalDate', e.target.value)} placeholder="gg/mm/aaaa" />
+              <input className="form-input" value={draft.arrivalDate} onChange={e => set('arrivalDate', e.target.value)} placeholder="dd/mm/yyyy" />
             </div>
             <div className="form-group">
               <label className="form-label">Arrival Time</label>
@@ -256,7 +256,7 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
             </div>
             <div className="form-group">
               <label className="form-label">Departure Date</label>
-              <input className="form-input" value={draft.departureDate} onChange={e => set('departureDate', e.target.value)} placeholder="gg/mm/aaaa" />
+              <input className="form-input" value={draft.departureDate} onChange={e => set('departureDate', e.target.value)} placeholder="dd/mm/yyyy" />
             </div>
             <div className="form-group">
               <label className="form-label">Departure Time</label>
@@ -265,9 +265,9 @@ export function GuestModal({ guest, onSave, onClose, guestLookup = {} }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Annulla</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary btn-sm" disabled={!isValid} onClick={() => onSave(draft)}>
-            {guest.name ? 'Salva modifiche' : 'Aggiungi ospite'}
+            {guest.name ? 'Save changes' : 'Add guest'}
           </button>
         </div>
       </div>
@@ -376,7 +376,7 @@ export default function StepGuests() {
   };
 
   const handleDelete = id => {
-    if (window.confirm('Eliminare questo ospite?')) {
+    if (window.confirm('Delete this guest?')) {
       dispatch({ type: 'REMOVE_GUEST', guestId: id });
     }
   };
@@ -463,10 +463,10 @@ export default function StepGuests() {
   return (
     <div className="step-container wide">
       <div className="step-header">
-        <h1>Lista Ospiti</h1>
+        <h1>Guest List</h1>
         <p>
-          Importa gli ospiti dal tuo file Excel oppure aggiungili manualmente.
-          Tutti i campi sono modificabili inline dalla tabella.
+          Import guests from your Excel file or add them manually.
+          All fields are editable inline.
         </p>
       </div>
 
@@ -481,15 +481,15 @@ export default function StepGuests() {
           style={{ marginBottom: 20 }}
         >
           <span className="upload-icon">📊</span>
-          <h3>{loading ? 'Caricamento…' : 'Trascina qui il file Excel o clicca per selezionarlo'}</h3>
+          <h3>{loading ? 'Loading…' : 'Drag your Excel file here or click to select'}</h3>
           <p>
-            Formato: .xlsx o .xls —{' '}
+            Format: .xlsx or .xls —{' '}
             <button
               className="btn btn-ghost btn-xs"
               style={{ display: 'inline', padding: '2px 6px' }}
               onClick={e => { e.stopPropagation(); downloadGuestTemplate(); }}
             >
-              Scarica template
+              Download template
             </button>
           </p>
           {error && <p style={{ color: 'var(--danger-500)', marginTop: 8, fontSize: 13 }}>{error}</p>}
@@ -497,10 +497,10 @@ export default function StepGuests() {
       ) : (
         <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
           <button className="btn btn-outline btn-sm" onClick={() => fileInputRef.current?.click()}>
-            📤 Ricarica Excel
+            📤 Reload Excel
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => downloadGuestTemplate()}>
-            📄 Scarica template
+            📄 Download template
           </button>
         </div>
       )}
@@ -517,7 +517,7 @@ export default function StepGuests() {
         <>
           {/* Stats chips */}
           <div className="guest-stats">
-            <div className="stat-chip"><strong>{guests.length}</strong> ospiti totali</div>
+            <div className="stat-chip"><strong>{guests.length}</strong> total guests</div>
             <div className="stat-chip">
               <span style={{ color: 'var(--male-color)' }}>♂</span>
               <strong>{maleCount}</strong> Male
@@ -527,12 +527,12 @@ export default function StepGuests() {
               <strong>{femaleCount}</strong> Female
             </div>
             <div className="stat-chip">
-              <strong>{groups.length}</strong> {groups.length === 1 ? 'gruppo' : 'gruppi'}
+              <strong>{groups.length}</strong> {groups.length === 1 ? 'group' : 'groups'}
             </div>
             {guests.filter(g => g.roomId).length > 0 && (
               <div className="stat-chip">
                 <span style={{ color: 'var(--success-600)' }}>✓</span>
-                <strong>{guests.filter(g => g.roomId).length}</strong> assegnati
+                <strong>{guests.filter(g => g.roomId).length}</strong> assigned
               </div>
             )}
           </div>
@@ -544,7 +544,7 @@ export default function StepGuests() {
               <span className="filter-search-icon">🔍</span>
               <input
                 className="filter-search-input"
-                placeholder="Cerca per nome, cognome, ID, gruppo…"
+                placeholder="Search by name, surname, ID, group…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -559,7 +559,7 @@ export default function StepGuests() {
               value={filterGroup}
               onChange={e => setFilterGroup(e.target.value)}
             >
-              <option value="all">Tutti i gruppi</option>
+              <option value="all">All groups</option>
               {groups.map(gr => <option key={gr} value={gr}>{gr}</option>)}
             </select>
 
@@ -580,14 +580,14 @@ export default function StepGuests() {
               value={filterAssigned}
               onChange={e => setFilterAssigned(e.target.value)}
             >
-              <option value="all">Tutti</option>
-              <option value="assigned">✓ Assegnati</option>
-              <option value="unassigned">⚠ Non assegnati</option>
+              <option value="all">All</option>
+              <option value="assigned">✓ Assigned</option>
+              <option value="unassigned">⚠ Unassigned</option>
             </select>
 
             {/* Age range */}
             <div className="filter-age-range">
-              <span style={{ fontSize: 12, color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>Età</span>
+              <span style={{ fontSize: 12, color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>Age</span>
               <input
                 type="number"
                 className="filter-age-input"
@@ -609,7 +609,7 @@ export default function StepGuests() {
 
             {/* Reset */}
             {hasActiveFilters && (
-              <button className="btn btn-ghost btn-sm" onClick={resetFilters} title="Rimuovi filtri">
+              <button className="btn btn-ghost btn-sm" onClick={resetFilters} title="Clear filters">
                 ✕ Reset
               </button>
             )}
@@ -618,12 +618,12 @@ export default function StepGuests() {
             <span className="filter-count">
               {filtered.length !== guests.length
                 ? <><strong>{filtered.length}</strong> / {guests.length}</>
-                : <><strong>{guests.length}</strong> ospiti</>
+                : <><strong>{guests.length}</strong> guests</>
               }
             </span>
 
             <button className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={() => setModal('add')}>
-              + Aggiungi
+              + Add
             </button>
           </div>
 
@@ -631,10 +631,10 @@ export default function StepGuests() {
           {filtered.length === 0 ? (
             <div className="empty-state" style={{ paddingTop: 32 }}>
               <span className="empty-icon">🔍</span>
-              <h3>Nessun risultato</h3>
-              <p>Prova a modificare i filtri.</p>
+              <h3>No results</h3>
+              <p>Try adjusting the filters.</p>
               <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={resetFilters}>
-                Rimuovi filtri
+                Clear filters
               </button>
             </div>
           ) : (
@@ -665,7 +665,7 @@ export default function StepGuests() {
                     <SortTh col="travelWith" label="Travel With" />
                     <Th col="arrival" label="Arrival" />
                     <Th col="departure" label="Departure" />
-                    <th style={{ width: 70 }}>Azioni</th>
+                    <th style={{ width: 70 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -738,8 +738,8 @@ export default function StepGuests() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <button className="btn btn-ghost btn-xs" title="Modifica" onClick={() => setModal(g.id)}>✏️</button>
-                          <button className="btn btn-danger-outline btn-xs" title="Elimina" onClick={() => handleDelete(g.id)}>🗑</button>
+                          <button className="btn btn-ghost btn-xs" title="Edit" onClick={() => setModal(g.id)}>✏️</button>
+                          <button className="btn btn-danger-outline btn-xs" title="Delete" onClick={() => handleDelete(g.id)}>🗑</button>
                         </div>
                       </td>
                     </tr>

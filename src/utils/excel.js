@@ -209,10 +209,10 @@ export function parseGuestExcel(file) {
 
         resolve(guests);
       } catch (err) {
-        reject(new Error('Errore nel leggere il file Excel: ' + err.message));
+        reject(new Error('Error reading Excel file:' + err.message));
       }
     };
-    reader.onerror = () => reject(new Error('Errore nella lettura del file'));
+    reader.onerror = () => reject(new Error('Error reading file'));
     reader.readAsArrayBuffer(file);
   });
 }
@@ -301,7 +301,7 @@ export function parseAccommodationExcel(file) {
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
 
         if (rows.length < 2) {
-          reject(new Error('Il file è vuoto o manca la riga di intestazione.'));
+          reject(new Error('The file is empty or missing the header row.'));
           return;
         }
 
@@ -332,7 +332,7 @@ export function parseAccommodationExcel(file) {
           if (!buildingName && rawBuilding) buildingName = rawBuilding;
 
           const floorNum = String(rawFloor || '1').trim();
-          const corridorName = rawCorridor || `Piano ${floorNum}`;
+          const corridorName = rawCorridor || `Floor ${floorNum}`;
 
           const validTypes = ['standard', 'single', 'double', 'triple', 'quad', 'suite'];
           const type = validTypes.includes(rawType)
@@ -355,7 +355,7 @@ export function parseAccommodationExcel(file) {
         }
 
         if (floorMap.size === 0) {
-          reject(new Error('Nessuna stanza trovata. Verifica le intestazioni delle colonne.'));
+          reject(new Error('No rooms found. Please check the column headers.'));
           return;
         }
 
@@ -370,12 +370,12 @@ export function parseAccommodationExcel(file) {
             })),
           }));
 
-        resolve({ name: buildingName || 'Struttura importata', floors });
+        resolve({ name: buildingName || 'Imported structure', floors });
       } catch (err) {
-        reject(new Error('Errore nel leggere il file Excel: ' + err.message));
+        reject(new Error('Error reading Excel file:' + err.message));
       }
     };
-    reader.onerror = () => reject(new Error('Errore nella lettura del file'));
+    reader.onerror = () => reject(new Error('Error reading file'));
     reader.readAsArrayBuffer(file);
   });
 }
@@ -430,19 +430,11 @@ export function exportAllocation(guests, accommodation) {
       'Departure Date':    g.departureDate,
       'Departure Time':    g.departureTime,
       'Departure Airport': g.departureAirport || '',
-      // AI Extracted Columns
-      'Allergies AI':      Array.isArray(g.allergy) ? g.allergy.join(', ') : (g.allergy || ''),
-      'Conditions AI':     Array.isArray(g.medical_condition) ? g.medical_condition.join(', ') : (g.medical_condition || ''),
-      'Medications AI':    Array.isArray(g.medication) ? g.medication.join(', ') : (g.medication || ''),
-      'Learning AI':       Array.isArray(g.learning_difficulty) ? g.learning_difficulty.join(', ') : (g.learning_difficulty || ''),
-      'Roommate Pref AI':  Array.isArray(g.roommate_preference) ? g.roommate_preference.join(', ') : (g.roommate_preference || ''),
-      'AI General Note':   g.general_note || '',
-      'Linked Roommate':   sortedGuests.find(target => target.id === g.roommateId)?.fullName || '',
     };
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [16,8,10,8,12,12,18,8,6,12,20,18,14,12,14,14,12,14].map(w => ({ wch: w }));
+  ws['!cols'] = [16,8,10,8,12,12,18,8,6,12,20,18,14,12,14,14,12].map(w => ({ wch: w }));
   XLSX.utils.book_append_sheet(wb, ws, 'Allocation List');
 
   XLSX.writeFile(wb, `allocation-${new Date().toISOString().split('T')[0]}.xlsx`);

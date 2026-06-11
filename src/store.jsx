@@ -11,7 +11,7 @@ export const DEFAULT_RULES = [
   { id: 'roommate-link',    type: 'roommate_link',    label: 'Honour Travel With links',  description: 'Forces/prioritises placing linked guests in the same room.', enabled: true, priority: 4, params: { weight: 100000 } },
   { id: 'maximize-group',   type: 'maximize_group',   label: 'Maximise group cohesion',   description: 'Tries to place guests from the same group in nearby rooms or corridors.', enabled: true, priority: 5, params: {} },
   { id: 'age-floor-order',  type: 'age_floor_order',  label: 'Age-based floor ordering',  description: 'Assigns younger guests to lower floors and older guests to higher floors.', enabled: false, priority: 6, params: {} },
-  { id: 'spread-gl',        type: 'spread_gl',        label: 'Supervisor coverage per corridor', description: 'Tries to ensure every corridor has at least one GL or LiA from the same group as the students in it — spreading supervisors across corridors rather than clustering them.', enabled: true, priority: 3, params: {} },
+  { id: 'spread-gl',        type: 'spread_gl',        label: 'Supervisor coverage per corridor', description: 'Ensures every corridor has at least one GL or LiA. Corridors with no supervisor are filled first; group affinity is used as a tiebreaker.', enabled: true, priority: 3, params: {} },
 ];
 
 const BLANK_PROJECT = {
@@ -21,6 +21,8 @@ const BLANK_PROJECT = {
   rules: DEFAULT_RULES,
   guests: [],
   auditLog: [],
+  undoStack: [],
+  redoStack: [],
 };
 
 // Activity object shorthands
@@ -273,43 +275,67 @@ function reducer(state, action) {
     case 'ADD_GUEST':     return { ...state, guests: [...state.guests, action.guest] };
     case 'UPDATE_GUEST':  return { ...state, guests: state.guests.map(g => g.id === action.guest.id ? action.guest : g) };
     case 'REMOVE_GUEST':  return { ...state, guests: state.guests.filter(g => g.id !== action.guestId) };
+    case 'UNDO': {
+      if (state.undoStack.length === 0) return state;
+      const [prev, ...restUndo] = state.undoStack;
+      return {
+        ...state,
+        guests: prev,
+        undoStack: restUndo,
+        redoStack: [state.guests, ...state.redoStack].slice(0, 50),
+      };
+    }
+    case 'REDO': {
+      if (state.redoStack.length === 0) return state;
+      const [next, ...restRedo] = state.redoStack;
+      return {
+        ...state,
+        guests: next,
+        redoStack: restRedo,
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+      };
+    }
     case 'ASSIGN_ROOM': {
       const g = state.guests.find(x => x.id === action.guestId);
       const oldRoom = findRoomLabel(g?.roomId);
       const newRoom = findRoomLabel(action.roomId);
       const meta = `${g?.sex || '?'} · ${g?.age || '?'}y${g?.role ? ` · ${g.role}` : ''}`;
-      
+
       const log = {
         id: Date.now() + Math.random(),
         timestamp: new Date().toISOString(),
-        user: state.currentUser || 'Utente',
+        user: state.currentUser || 'User',
         type: 'assignment',
-        guestName: g ? `${g.name} ${g.surname}` : 'Ospite',
-        details: g?.roomId 
-          ? `Spostato da ${oldRoom} a ${newRoom} (${meta})` 
-          : `Assegnato a ${newRoom} (${meta})`
+        guestName: g ? `${g.name} ${g.surname}` : 'Guest',
+        details: g?.roomId
+          ? `Moved from ${oldRoom} to ${newRoom} (${meta})`
+          : `Assigned to ${newRoom} (${meta})`
       };
-      return { ...state, 
+      return { ...state,
         guests: state.guests.map(g => g.id === action.guestId ? { ...g, roomId: action.roomId } : g),
-        auditLog: [log, ...(state.auditLog || [])] 
+        auditLog: [log, ...(state.auditLog || [])],
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+        redoStack: [],
       };
     }
     case 'UNASSIGN_GUEST': {
       const g = state.guests.find(x => x.id === action.guestId);
       const oldRoom = findRoomLabel(g?.roomId);
       const meta = `${g?.sex || '?'} · ${g?.age || '?'}y${g?.role ? ` · ${g.role}` : ''}`;
-      
+
       const log = {
         id: Date.now() + Math.random(),
         timestamp: new Date().toISOString(),
-        user: state.currentUser || 'Utente',
+        user: state.currentUser || 'User',
         type: 'unassignment',
-        guestName: g ? `${g.name} ${g.surname}` : 'Ospite',
-        details: `Rimosso da ${oldRoom} (${meta})`
+        guestName: g ? `${g.name} ${g.surname}` : 'Guest',
+        details: `Removed from ${oldRoom} (${meta})`
       };
-      return { ...state, 
+      return { ...state,
         guests: state.guests.map(g => g.id === action.guestId ? { ...g, roomId: null } : g),
-        auditLog: [log, ...(state.auditLog || [])] 
+        auditLog: [log, ...(state.auditLog || [])],
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+        redoStack: [],
       };
     }
 
@@ -343,23 +369,30 @@ function reducer(state, action) {
       const log = {
         id: Date.now() + Math.random(),
         timestamp: new Date().toISOString(),
-        user: 'Sistema (AI)',
+        user: 'System (AI)',
         type: 'auto_allocate',
-        details: `Eseguita allocazione automatica per ${Object.keys(assignments).length} ospiti.`
+        details: `Auto-allocation completed for ${Object.keys(assignments).length} guests.`
       };
       
-      return { 
-        ...state, 
+      return {
+        ...state,
         guests: state.guests.map(g => ({
-          ...g, 
-          roomId: assignments[g.id] !== undefined ? assignments[g.id] : g.roomId 
+          ...g,
+          roomId: assignments[g.id] !== undefined ? assignments[g.id] : g.roomId
         })),
-        auditLog: [log, ...(state.auditLog || [])]
+        auditLog: [log, ...(state.auditLog || [])],
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+        redoStack: [],
       };
     }
 
     case 'CLEAR_ALLOCATIONS':
-      return { ...state, guests: state.guests.map(g => ({ ...g, roomId: null })) };
+      return {
+        ...state,
+        guests: state.guests.map(g => ({ ...g, roomId: null })),
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+        redoStack: [],
+      };
 
     case 'SWAP_GUESTS': {
       const gA = state.guests.find(g => g.id === action.guestIdA);
@@ -370,16 +403,22 @@ function reducer(state, action) {
       const log = {
         id: Date.now() + Math.random(),
         timestamp: new Date().toISOString(),
-        user: state.currentUser || 'Utente',
+        user: state.currentUser || 'User',
         type: 'swap',
-        details: `Scambiati ${gA.name} ${gA.surname} e ${gB.name} ${gB.surname}`
+        details: `Swapped ${gA.name} ${gA.surname} and ${gB.name} ${gB.surname}`
       };
-      
-      return { ...state, guests: state.guests.map(g => {
-        if (g.id === action.guestIdA) return { ...g, roomId: roomB };
-        if (g.id === action.guestIdB) return { ...g, roomId: roomA };
-        return g;
-      }), auditLog: [log, ...(state.auditLog || [])] };
+
+      return {
+        ...state,
+        guests: state.guests.map(g => {
+          if (g.id === action.guestIdA) return { ...g, roomId: roomB };
+          if (g.id === action.guestIdB) return { ...g, roomId: roomA };
+          return g;
+        }),
+        auditLog: [log, ...(state.auditLog || [])],
+        undoStack: [state.guests, ...state.undoStack].slice(0, 50),
+        redoStack: [],
+      };
     }
 
     // ── Saved allocations ──

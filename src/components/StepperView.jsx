@@ -53,7 +53,7 @@ export default function StepperView({ onBackToDashboard }) {
         </nav>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--gray-50)', position: 'relative' }}>
+      <div className="stepper-content" style={{ flex: 1, overflowY: 'auto', background: 'var(--gray-50)', position: 'relative' }}>
         {step === 0 && <StepAccommodation />}
         {step === 1 && <StepRules />}
         {step === 2 && <StepGuests />}

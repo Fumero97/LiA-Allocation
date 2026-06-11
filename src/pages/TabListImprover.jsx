@@ -105,12 +105,12 @@ export default function TabListImprover({ onClose }) {
   };
 
   const tools = [
-    { id: 'age', name: 'Verifica Età', icon: '🎂', desc: 'Ricalcola l\'età basandosi sulla data di nascita e il giorno di arrivo.' },
-    { id: 'names', name: 'Capitalizzazione', icon: '✍️', desc: 'Applica l\'iniziale maiuscola a tutti i nomi e cognomi.' },
-    { id: 'fullName', name: 'Sync Nomi / FullName', icon: '🔄', desc: 'Sincronizza: unisce Nome+Cognome o divide il Nome Completo se i campi singoli sono vuoti.' },
-    { id: 'roommates', name: 'Travel With', icon: '🔗', desc: 'Analizza preferenze di stanza e crea collegamenti vincolanti tra ospiti.' },
-    { id: 'allergies', name: 'Standardizza Allergie', icon: '⚕️', desc: 'Associa tag allergie standardizzati agli ospiti.' },
-    { id: 'medical', name: 'Medical', icon: '🏥', desc: 'Associa tag condizioni mediche standardizzati agli ospiti.' }
+    { id: 'age', name: 'Age Check', icon: '🎂', desc: 'Recalculates age based on date of birth and arrival date.' },
+    { id: 'names', name: 'Capitalisation', icon: '✍️', desc: 'Applies title case to all first and last names.' },
+    { id: 'fullName', name: 'Sync Names / FullName', icon: '🔄', desc: 'Syncs: merges First+Last or splits Full Name if individual fields are empty.' },
+    { id: 'roommates', name: 'Travel With', icon: '🔗', desc: 'Analyses room preferences and creates binding links between guests.' },
+    { id: 'allergies', name: 'Standardise Allergies', icon: '⚕️', desc: 'Assigns standardised allergy tags to guests.' },
+    { id: 'medical', name: 'Medical', icon: '🏥', desc: 'Assigns standardised medical condition tags to guests.' }
   ];
 
   const calculateAgeAtDate = (dobStr, baseDateStr) => {
@@ -197,7 +197,7 @@ export default function TabListImprover({ onClose }) {
     <div className="saas-tab-content">
       <div className="saas-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>← Torna alle liste</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>← Back to lists</button>
           <h1 style={{ margin: 0 }}>List Improver 🪄</h1>
           {list && <span style={{ fontSize: 13, color: 'var(--gray-500)', fontWeight: 600 }}>{list.name}</span>}
         </div>
@@ -208,10 +208,10 @@ export default function TabListImprover({ onClose }) {
           <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderLeft: '4px solid #f59e0b', borderRadius: 8, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 13, color: '#92400e' }}>
-                ⚠️ Lista aggiornata dalla v{lastVer === 0 ? '—' : lastVer} → v{curVer}
+                ⚠️ List updated from v{lastVer === 0 ? '—' : lastVer} → v{curVer}
               </div>
               <div style={{ fontSize: 12, color: '#78350f', marginTop: 3 }}>
-                Ci sono variazioni non ancora processate. Considera di rieseguire tutti gli strumenti su questa versione.
+                There are unprocessed changes. Consider re-running all tools on this version.
               </div>
             </div>
             <button
@@ -219,13 +219,13 @@ export default function TabListImprover({ onClose }) {
               style={{ background: '#f59e0b', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
               onClick={() => dispatch({ type: 'SET_IMPROVER_VERSION', listId: effectiveListId })}
             >
-              Ho capito
+              Got it
             </button>
           </div>
         )}
 
         {!effectiveListId ? (
-          <div className="empty-state">Scegli una lista ospiti per iniziare a ottimizzare i dati.</div>
+          <div className="empty-state">Select a guest list to start optimising the data.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
@@ -242,13 +242,13 @@ export default function TabListImprover({ onClose }) {
               <div className="card" style={{ padding: 0 }}>
                 <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--gray-200)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ margin: 0 }}>
-                    {activeTool === 'roommates' ? 'Travel With — Compagni di Stanza' : activeTool === 'allergies' ? 'Standardizza Allergie' : activeTool === 'medical' ? 'Medical' : `Risultati: ${tools.find(t => t.id === activeTool)?.name}`}
+                    {activeTool === 'roommates' ? 'Travel With — Roommates' : activeTool === 'allergies' ? 'Standardise Allergies' : activeTool === 'medical' ? 'Medical' : `Results: ${tools.find(t => t.id === activeTool)?.name}`}
                   </h3>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {suggestions.length > 0 && activeTool !== 'roommates' && (
                       <>
-                        <span style={{ fontSize: 13, color: 'var(--gray-500)' }}>{suggestions.length} suggerimenti</span>
-                        <button className="btn btn-primary btn-sm" onClick={applyAll}>Applica a tutti</button>
+                        <span style={{ fontSize: 13, color: 'var(--gray-500)' }}>{suggestions.length} suggestions</span>
+                        <button className="btn btn-primary btn-sm" onClick={applyAll}>Apply to all</button>
                       </>
                     )}
                   </div>
@@ -267,7 +267,7 @@ export default function TabListImprover({ onClose }) {
                     <div>
                       {linkedPairs.length > 0 && (
                         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--success-200)', background: 'var(--success-50)' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--success-700)', marginBottom: 6 }}>🔗 COLLEGATI</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--success-700)', marginBottom: 6 }}>🔗 LINKED</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {linkedPairs.map((p, i) => (
                               <span key={i} style={{ padding: '3px 10px', background: 'var(--success-100)', color: 'var(--success-800)', borderRadius: 20, fontSize: 12, border: '1px solid var(--success-300)' }}>
@@ -281,15 +281,15 @@ export default function TabListImprover({ onClose }) {
                         <table className="guest-table mini-headers">
                           <thead>
                             <tr>
-                              <th style={{ width: '18%' }}>Ospite</th>
+                              <th style={{ width: '18%' }}>Guest</th>
                               <th style={{ width: '22%' }}>Medical/Allergies</th>
                               <th style={{ width: '22%' }}>Private notes</th>
-                              <th>Collega a...</th>
+                              <th>Link to...</th>
                             </tr>
                           </thead>
                           <tbody>
                             {guestsWithNotes.length === 0 && (
-                              <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, color: 'var(--gray-400)' }}>Nessun ospite con note.</td></tr>
+                              <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24, color: 'var(--gray-400)' }}>No guests with notes.</td></tr>
                             )}
                             {guestsWithNotes.map(g => {
                               const linkedIds = Array.isArray(g.roommateIds) ? g.roommateIds : (g.roommateId ? [g.roommateId] : []);
@@ -328,7 +328,7 @@ export default function TabListImprover({ onClose }) {
                                       <input
                                         className="form-input mini"
                                         style={{ width: '100%', fontSize: 12 }}
-                                        placeholder="Cerca ospite..."
+                                        placeholder="Search guest..."
                                         value={search}
                                         onChange={e => setRowSearch(prev => ({ ...prev, [g.id]: e.target.value }))}
                                       />
@@ -377,7 +377,7 @@ export default function TabListImprover({ onClose }) {
                     <div>
                       {Object.keys(allergyMap).length > 0 && (
                         <div style={{ padding: '10px 16px', borderBottom: '1px solid #fde68a', background: '#fffbeb' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>⚕️ ALLERGIE REGISTRATE</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>⚕️ REGISTERED ALLERGIES</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {Object.entries(allergyMap).sort((a, b) => b[1].length - a[1].length).map(([tag, names]) => (
                               <span key={tag} title={names.join(', ')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', borderRadius: 20, fontSize: 12 }}>
@@ -392,10 +392,10 @@ export default function TabListImprover({ onClose }) {
                         <table className="guest-table mini-headers">
                           <thead>
                             <tr>
-                              <th style={{ width: '18%' }}>Ospite</th>
+                              <th style={{ width: '18%' }}>Guest</th>
                               <th style={{ width: '22%' }}>Medical/Allergies</th>
                               <th style={{ width: '22%' }}>Private notes</th>
-                              <th>Allergie standardizzate</th>
+                              <th>Standardised allergies</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -432,7 +432,7 @@ export default function TabListImprover({ onClose }) {
                                       ))}
                                     </div>
                                     <div style={{ position: 'relative' }}>
-                                      <input className="form-input mini" style={{ width: '100%', fontSize: 12 }} placeholder="Cerca o crea allergia..."
+                                      <input className="form-input mini" style={{ width: '100%', fontSize: 12 }} placeholder="Search or create allergy..."
                                         value={search} onChange={e => setAllergySearch(prev => ({ ...prev, [g.id]: e.target.value }))}
                                         onKeyDown={e => { if (e.key === 'Enter' && search.trim()) addAllergyTag(g.id, search.trim()); }}
                                       />
@@ -482,7 +482,7 @@ export default function TabListImprover({ onClose }) {
                     <div>
                       {Object.keys(medMap).length > 0 && (
                         <div style={{ padding: '10px 16px', borderBottom: '1px solid #bfdbfe', background: '#eff6ff' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>🏥 CONDIZIONI REGISTRATE</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#1e40af', marginBottom: 6 }}>🏥 REGISTERED CONDITIONS</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                             {Object.entries(medMap).sort((a, b) => b[1].length - a[1].length).map(([tag, names]) => (
                               <span key={tag} title={names.join(', ')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe', borderRadius: 20, fontSize: 12 }}>
@@ -497,10 +497,10 @@ export default function TabListImprover({ onClose }) {
                         <table className="guest-table mini-headers">
                           <thead>
                             <tr>
-                              <th style={{ width: '18%' }}>Ospite</th>
+                              <th style={{ width: '18%' }}>Guest</th>
                               <th style={{ width: '22%' }}>Medical/Allergies</th>
                               <th style={{ width: '22%' }}>Private notes</th>
-                              <th>Medical standardizzato</th>
+                              <th>Standardised medical</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -541,7 +541,7 @@ export default function TabListImprover({ onClose }) {
                                       ))}
                                     </div>
                                     <div style={{ position: 'relative' }}>
-                                      <input className="form-input mini" style={{ width: '100%', fontSize: 12 }} placeholder="Cerca o crea condizione..."
+                                      <input className="form-input mini" style={{ width: '100%', fontSize: 12 }} placeholder="Search or create condition..."
                                         value={search} onChange={e => setMedicalSearch(prev => ({ ...prev, [g.id]: e.target.value }))}
                                         onKeyDown={e => { if (e.key === 'Enter' && search.trim()) addMedicalTag(g.id, search.trim()); }}
                                       />
@@ -580,15 +580,15 @@ export default function TabListImprover({ onClose }) {
 
                 <div style={{ maxHeight: 600, overflowY: 'auto' }}>
                   {suggestions.length === 0 && aiStep !== 'idle' ? (
-                    <div style={{ padding: 32, textAlign: 'center', color: 'var(--success-600)' }}>✅ Dati già ottimizzati! Nessuna modifica suggerita.</div>
+                    <div style={{ padding: 32, textAlign: 'center', color: 'var(--success-600)' }}>✅ Data already optimised! No changes suggested.</div>
                   ) : suggestions.length > 0 && activeTool !== 'roommates' && activeTool !== 'allergies' && activeTool !== 'medical' ? (
                     <table className="guest-table mini-headers">
                       <thead>
                         <tr>
-                          <th>Ospite</th>
-                          <th>Prima</th>
-                          <th>Dopo / Info</th>
-                          <th style={{ width: 110 }}>Azione</th>
+                          <th>Guest</th>
+                          <th>Before</th>
+                          <th>After / Info</th>
+                          <th style={{ width: 110 }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -605,8 +605,8 @@ export default function TabListImprover({ onClose }) {
                               </td>
                               <td>
                                 <div style={{ display: 'flex', gap: 6 }}>
-                                  <button className="btn btn-primary btn-xs" onClick={() => applySingle(i)}>Applica</button>
-                                  <button className="btn btn-ghost btn-xs" style={{ color: 'var(--danger-600)' }} onClick={() => dismissSingle(i)}>Scarta</button>
+                                  <button className="btn btn-primary btn-xs" onClick={() => applySingle(i)}>Apply</button>
+                                  <button className="btn btn-ghost btn-xs" style={{ color: 'var(--danger-600)' }} onClick={() => dismissSingle(i)}>Dismiss</button>
                                 </div>
                               </td>
                             </tr>

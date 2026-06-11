@@ -39,7 +39,7 @@ function PoolChip({ guest, index, isSelected, isSwapTarget, onSelect }) {
           <div className="chip-info">
             <div className="chip-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                {guest.name} {guest.surname}
-               {getRoommateIds(guest).length > 0 && <span style={{ fontSize: 12 }} title="Ha un compagno collegato">🔗</span>}
+               {getRoommateIds(guest).length > 0 && <span style={{ fontSize: 12 }} title="Has a linked companion">🔗</span>}
             </div>
             <div className="chip-meta">
               <span className="alloc-age-dot" style={{ display:'inline-block', width: 8, height: 8, borderRadius: '50%', background: band.bg, border: `1px solid ${band.border}`, marginRight: 4 }} title={`Età: ${guest.age}y`} />
@@ -150,7 +150,7 @@ function EditGuestModal({ guest, onSave, onClose }) {
 }
 
 /* ── Guest row inside room ── */
-function AllocGuestRow({ guest, index, isSelected, isSwapTarget, onGuestClick, onEdit, roomCellText, allGuests, roomIndex, isDimmed }) {
+function AllocGuestRow({ guest, index, isSelected, isSwapTarget, onGuestClick, onEdit, roomCellText, roomWarning, allGuests, roomIndex, isDimmed }) {
   const [showRoommateInfo, setShowRoommateInfo] = useState(false);
   const isAdult = guest.age >= ADULT_AGE;
   const band = getAgeBand(guest.age);
@@ -183,6 +183,7 @@ function AllocGuestRow({ guest, index, isSelected, isSwapTarget, onGuestClick, o
           {roomCellText !== undefined ? (
             <td style={{ fontWeight: 800, textAlign: 'center', background: 'var(--gray-100)', borderRight: '1px solid var(--gray-200)', width: 80 }}>
               {roomCellText}
+              {roomWarning && <span title={roomWarning} style={{ marginLeft: 4, cursor: 'help', fontSize: 11 }}>⚠️</span>}
             </td>
           ) : <td style={{ background: 'var(--gray-50)', borderRight: '1px solid var(--gray-200)', width: 80 }}></td>}
           <td style={{ 
@@ -310,8 +311,9 @@ function AllocGuestRow({ guest, index, isSelected, isSwapTarget, onGuestClick, o
 /* ── Room cell ── */
 function RoomCell({ room, roomGuests, selectedId, isCompatible, isHighlighted, onRoomClick, onGuestClick, onEditGuest, allGuests, roomIndex, filteredGuestIds }) {
   const isUnavail = room.status === 'unavailable';
-  const hasMale   = roomGuests.some(g => g.sex === 'M');
-  const hasFemale = roomGuests.some(g => g.sex === 'F');
+  const students  = roomGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA');
+  const hasMale   = students.some(g => g.sex === 'M');
+  const hasFemale = students.some(g => g.sex === 'F');
   const hasMixed  = hasMale && hasFemale;
   
   // Per lo sfondo di tbody in caso misto o altro
@@ -350,6 +352,7 @@ function RoomCell({ room, roomGuests, selectedId, isCompatible, isHighlighted, o
                   onGuestClick={onGuestClick}
                   onEdit={onEditGuest}
                   roomCellText={i === 0 ? room.number : undefined}
+                  roomWarning={i === 0 && hasMixed ? 'Mixed room: students of both sexes' : undefined}
                   allGuests={allGuests}
                   roomIndex={roomIndex}
                   isDimmed={filteredGuestIds !== null && !filteredGuestIds.has(g.id)}
@@ -393,7 +396,7 @@ function SaveModal({ onSave, onClose, initialName = '' }) {
             <label className="form-label">Allocation name</label>
             <input
               className="form-input"
-              placeholder="es. Estate 2025 — Gruppo A"
+              placeholder="e.g. Summer 2025 — Group A"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim())}
@@ -437,7 +440,7 @@ function ViolationBanner({ violations, onDismiss }) {
 ══════════════════════════════════════════ */
 export default function StepAllocation() {
   const { state, dispatch } = useApp();
-  const { accommodation, guests, rules } = state;
+  const { accommodation, guests, rules, undoStack = [], redoStack = [] } = state;
 
   const [search, setSearch]           = useState('');
   const [globalSearch, setGlobalSearch] = useState('');
@@ -460,10 +463,20 @@ export default function StepAllocation() {
   });
 
   useEffect(() => {
-    const handler = e => { if (e.key === 'Escape') setSelectedId(null); };
+    const handler = e => {
+      if (e.key === 'Escape') setSelectedId(null);
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        dispatch({ type: 'UNDO' });
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        dispatch({ type: 'REDO' });
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [dispatch]);
 
   const groups = [...new Set(guests.map(g => g.group).filter(Boolean))];
 
@@ -690,8 +703,21 @@ export default function StepAllocation() {
             ⚡ Auto-assign
           </button>
           <button className="btn btn-outline btn-sm" onClick={() => { if (window.confirm('Remove all assignments?')) dispatch({ type: 'CLEAR_ALLOCATIONS' }); }}>
-            🗑 Cancella
+            🗑 Clear
           </button>
+
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => dispatch({ type: 'UNDO' })}
+            disabled={undoStack.length === 0}
+            title="Undo (Ctrl+Z)"
+          >↩ Undo</button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => dispatch({ type: 'REDO' })}
+            disabled={redoStack.length === 0}
+            title="Redo (Ctrl+Y)"
+          >↪ Redo</button>
 
           <div style={{ width: 1, height: 22, background: 'var(--gray-200)', margin: '0 4px', flexShrink: 0 }} />
 
@@ -843,11 +869,12 @@ export default function StepAllocation() {
                     .map(floor => (
                   <div key={floor.id} className="floor-section">
                     <div className="floor-section-header">
-                      {floor.name || `Piano ${floor.number}`}
+                      {floor.name || `Floor ${floor.number}`}
                     </div>
                     {floor.corridors.map(corridor => {
                       const corrGuests = decoratedGuests.filter(g => corridor.rooms.some(r => r.id === g.roomId));
-                      const sexes = [...new Set(corrGuests.map(g => g.sex))];
+                      const corrStudentsOnly = corrGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA');
+                      const sexes = [...new Set(corrStudentsOnly.map(g => g.sex))];
                       const sexBadge = sexes.length === 2 ? '⚠️' : sexes[0] === 'M' ? '♂' : sexes[0] === 'F' ? '♀' : '';
                       const ageGuests = corrGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA' && g.age > 0);
                       const ages = ageGuests.map(g => Number(g.age));
@@ -861,7 +888,7 @@ export default function StepAllocation() {
                           <div className="corridor-header-mini" style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => toggleCorridor(corridor.id)}>
                             <span style={{ fontSize: 12, color: 'var(--gray-400)', marginRight: 4, flexShrink: 0 }}>{isCollapsed ? '▶' : '▼'}</span>
                             <span className="corridor-tag">Corridor {corridor.name}</span>
-                            {sexBadge && <span className="sex-badge-inline">{sexBadge}</span>}
+                            {sexBadge && <span className="sex-badge-inline" title={sexes.length === 2 ? 'Mixed corridor: students of both sexes' : sexes[0] === 'M' ? 'Male corridor' : 'Female corridor'}>{sexBadge}</span>}
                             {ageRange && <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--gray-500)', background: 'var(--gray-100)', border: '1px solid var(--gray-200)', borderRadius: 4, padding: '1px 6px' }}>{ageRange}</span>}
                             {filteredGuestIds && <span style={{ fontSize: 11, color: 'var(--primary-600)', fontWeight: 600, marginLeft: 4 }}>{matchCount} found</span>}
                             <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--gray-400)' }}>{corrGuests.length}/{corridor.rooms.reduce((s, r) => s + (r.capacity || 0), 0)} spots</span>

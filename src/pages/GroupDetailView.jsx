@@ -4,7 +4,7 @@ import { GuestModal, EMPTY_GUEST, generateId } from '../components/steps/StepGue
 import { getAgeBand } from '../utils/ageBands';
 import { exportGuestList } from '../utils/excel';
 
-export default function GroupDetailView({ group, allGuests, savedIntakes, savedAccommodations = [], onBack, onEdit, onUpdateGuests }) {
+export default function GroupDetailView({ group, allGuests, savedIntakes, savedAccommodations = [], onBack, onEdit, onUpdateGuests, onDeleteGuest }) {
   const ALL_COLS = [
     { id: 'room',      label: 'Room' },
     { id: 'sex',       label: 'Gender' },
@@ -179,6 +179,14 @@ export default function GroupDetailView({ group, allGuests, savedIntakes, savedA
     guests.forEach(g => (Array.isArray(g.medical) ? g.medical : []).forEach(t => { map[t] = (map[t] || 0) + 1; }));
     return map;
   }, [guests]);
+
+  // ── delete guest ──────────────────────────────────────────
+  const handleDeleteGuest = (guestId) => {
+    const g = allGuests.find(x => x.id === guestId);
+    if (!g) return;
+    if (!window.confirm(`Delete ${g.name} ${g.surname}?`)) return;
+    onDeleteGuest?.(guestId, g._listId);
+  };
 
   // ── modal save ────────────────────────────────────────────
   const handleModalSave = (updated) => {
@@ -429,8 +437,9 @@ export default function GroupDetailView({ group, allGuests, savedIntakes, savedA
                         {vis('medical')    && <td>{Array.isArray(g.medical) && g.medical.length > 0 ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>{g.medical.map((m, j) => <span key={j} style={{ background: '#dbeafe', color: '#1e40af', padding: '1px 6px', borderRadius: 8, fontSize: 10 }}>{m}</span>)}</div> : <span style={{ color: 'var(--gray-200)', fontSize: 11 }}>—</span>}</td>}
                         {vis('travelWith') && <td style={{ fontSize: 11, color: 'var(--gray-600)' }}>{travelWithNames(g) || <span style={{ color: 'var(--gray-200)' }}>—</span>}</td>}
                         {vis('rawNotes')   && <td style={{ fontSize: 11, color: 'var(--gray-500)', maxWidth: 160 }}>{(() => { const raw = g.medicalRaw || (typeof g.medical === 'string' ? g.medical : '') || ''; return raw ? <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={raw}>{raw}</span> : <span style={{ color: 'var(--gray-200)' }}>—</span>; })()}</td>}
-                        <td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
                           <button className="btn btn-ghost btn-xs" onClick={() => setModal(g.id)}>✏️</button>
+                          <button className="btn btn-ghost btn-xs" style={{ color: 'var(--danger-500)' }} onClick={() => handleDeleteGuest(g.id)} title="Delete guest">🗑</button>
                         </td>
                       </tr>
                     ))}

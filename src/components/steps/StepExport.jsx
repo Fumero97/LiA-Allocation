@@ -2,6 +2,56 @@ import { useState } from 'react';
 import { useApp } from '../../store';
 import { exportAllocation } from '../../utils/excel';
 
+function computeRuleViolations(guests, accommodation, rules) {
+  const violations = [];
+  const enabledRules = rules.filter(r => r.enabled);
+  const sameSexCorrRule = enabledRules.find(r => r.type === 'same_sex_corridor');
+  const ageProxRule = enabledRules.find(r => r.type === 'age_proximity');
+
+  accommodation.floors.forEach(floor => {
+    if (sameSexCorrRule) {
+      floor.corridors.forEach(corridor => {
+        const corrGuests = guests.filter(g =>
+          g.roomId && g.role !== 'GL' && g.role !== 'LiA' &&
+          corridor.rooms.some(r => r.id === g.roomId)
+        );
+        const males = corrGuests.filter(g => g.sex === 'M');
+        const females = corrGuests.filter(g => g.sex === 'F');
+        if (males.length > 0 && females.length > 0) {
+          violations.push({
+            type: 'same_sex_corridor',
+            location: `Corridor ${corridor.name} — Floor ${floor.number}`,
+            detail: `${males.length} M + ${females.length} F`,
+          });
+        }
+      });
+    }
+
+    if (ageProxRule) {
+      const maxAgeDiff = ageProxRule.params?.maxAgeDiff ?? 3;
+      const minors = guests.filter(g =>
+        g.roomId && g.age > 0 && g.age <= 18 &&
+        g.role !== 'GL' && g.role !== 'LiA' &&
+        floor.corridors.some(c => c.rooms.some(r => r.id === g.roomId))
+      );
+      if (minors.length > 1) {
+        const avgAge = minors.reduce((s, g) => s + g.age, 0) / minors.length;
+        minors
+          .filter(g => Math.abs(g.age - avgAge) > maxAgeDiff)
+          .forEach(g => {
+            violations.push({
+              type: 'age_proximity',
+              location: `Floor ${floor.number}`,
+              detail: `${g.name} ${g.surname} (${g.age}y) — ${Math.round(Math.abs(g.age - avgAge))}y from floor average (${Math.round(avgAge)}y)`,
+            });
+          });
+      }
+    }
+  });
+
+  return violations;
+}
+
 /* ═══════════════════════════════════════════════
    EXPORT TAB
 ═══════════════════════════════════════════════ */
@@ -20,7 +70,8 @@ function GroupBar({ label, value, total, color }) {
   );
 }
 
-function ExportTab({ guests, accommodation }) {
+function ExportTab({ guests, accommodation, rules }) {
+  const violations  = computeRuleViolations(guests, accommodation, rules || []);
   const assigned    = guests.filter(g => g.roomId);
   const unassigned  = guests.filter(g => !g.roomId);
   const allRooms    = accommodation.floors.flatMap(f => f.corridors.flatMap(c => c.rooms));
@@ -59,6 +110,31 @@ function ExportTab({ guests, accommodation }) {
             {unassigned.slice(0, 5).map(g => `${g.name} ${g.surname}`).join(', ')}
             {unassigned.length > 5 && ` and ${unassigned.length - 5} more…`}
           </div>
+        </div>
+      )}
+
+      {violations.length > 0 && (
+        <div style={{ marginBottom: 24, background: 'var(--warning-50, #fffbeb)', border: '1px solid var(--warning-300, #fcd34d)', borderRadius: 10, padding: '14px 18px' }}>
+          <div style={{ fontWeight: 700, color: 'var(--warning-700, #b45309)', marginBottom: 10, fontSize: 14 }}>
+            ⚠️ {violations.length} violation{violations.length === 1 ? '' : 's'} detected
+          </div>
+          {['same_sex_corridor', 'age_proximity'].map(type => {
+            const group = violations.filter(v => v.type === type);
+            if (group.length === 0) return null;
+            const label = type === 'same_sex_corridor' ? 'Mixed sex per corridor' : 'Age proximity';
+            return (
+              <div key={type} style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gray-600)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>{label}</div>
+                <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
+                  {group.map((v, i) => (
+                    <li key={i} style={{ fontSize: 13, color: 'var(--gray-700)', marginBottom: 2 }}>
+                      <strong>{v.location}</strong> — {v.detail}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -284,11 +360,9 @@ function RoomRows({ room, roomGuests, groupColorMap }) {
   );
 }
 
-function RoomingPlanTab({ guests, accommodation }) {
+function RoomingPlanTab({ guests, accommodation, accommodationName }) {
   const [filterGroup, setFilterGroup] = useState('all');
   const [search, setSearch] = useState('');
-  const [showEmpty, setShowEmpty] = useState(true);
-  const [showUnavail, setShowUnavail] = useState(false);
 
   const groups = [...new Set(guests.map(g => g.group).filter(Boolean))].sort();
   const groupColorMap = {};
@@ -343,23 +417,6 @@ function RoomingPlanTab({ guests, accommodation }) {
           </div>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <label className="toggle-wrap" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
-              <span className="toggle">
-                <input type="checkbox" checked={showEmpty} onChange={e => setShowEmpty(e.target.checked)} />
-                <span className="toggle-track" /><span className="toggle-thumb" />
-              </span>
-              Empty
-            </label>
-
-            <label className="toggle-wrap" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
-              <span className="toggle">
-                <input type="checkbox" checked={showUnavail} onChange={e => setShowUnavail(e.target.checked)} />
-                <span className="toggle-track" /><span className="toggle-thumb" />
-              </span>
-              N/A
-            </label>
-
-            <div style={{ width: 1, height: 20, background: 'var(--gray-200)', margin: '0 4px' }} />
 
             <button className="btn btn-outline btn-sm" onClick={() => window.print()} title="Print to PDF">
               🖨️ PDF
@@ -390,14 +447,21 @@ function RoomingPlanTab({ guests, accommodation }) {
         </div>
       </div>
 
-      {/* Plan */}
-      <div className="rp-plan">
+      {/* Print-only title */}
+      <div className="rp-print-header">
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>
+          {accommodationName || 'Rooming Plan'}
+          {filterGroup !== 'all' ? ` — ${filterGroup}` : ''}
+        </h1>
+      </div>
+
+      {/* ── Screen view: all floors/corridors, empty rooms visible ── */}
+      <div className="rp-screen-only rp-plan">
         {accommodation.floors.map(floor => {
           const floorGuests = visibleGuests.filter(g =>
             floor.corridors.some(c => c.rooms.some(r => r.id === g.roomId))
           );
-          const floorAgeR = ageRange(floorGuests);
-
+          const floorAgeR = ageRange(floorGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA'));
           return (
             <div key={floor.id} className="rp-floor-section">
               <div className="rp-floor-header">
@@ -407,29 +471,19 @@ function RoomingPlanTab({ guests, accommodation }) {
                     Age range: {floorAgeR.min === floorAgeR.max ? `${floorAgeR.min}` : `${floorAgeR.min}–${floorAgeR.max}`} years
                   </span>
                 )}
-                <span className="rp-floor-count">
-                  {floorGuests.length} guests
-                </span>
+                <span className="rp-floor-count">{floorGuests.length} guests</span>
               </div>
-
               {floor.corridors.map(corridor => {
-                const corrGuests = visibleGuests.filter(g =>
-                  corridor.rooms.some(r => r.id === g.roomId)
-                );
-                const corrAgeR = ageRange(corrGuests);
-
+                const corrGuests = visibleGuests.filter(g => corridor.rooms.some(r => r.id === g.roomId));
+                const corrStudents = corrGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA');
+                const corrAgeR = ageRange(corrStudents);
                 return (
                   <div key={corridor.id} className="rp-corridor-section" style={{ marginBottom: 32 }}>
                     <div className="rp-corridor-header" style={{ marginBottom: 10, background: 'var(--gray-100)', padding: '6px 16px', borderRadius: 8, display: 'flex', alignItems: 'center' }}>
                       <span className="rp-corridor-label" style={{ fontWeight: 800, color: 'var(--gray-700)' }}>Corridor {corridor.name}</span>
-                      {corrAgeR && (
-                        <AgeRangePill guests={corrGuests} style={{ marginLeft: 12 }} />
-                      )}
-                      <span style={{ fontSize: 12, color: 'var(--gray-500)', marginLeft: 'auto', fontWeight: 600 }}>
-                        {corrGuests.length} assigned guests
-                      </span>
+                      {corrAgeR && <AgeRangePill guests={corrStudents} style={{ marginLeft: 12 }} />}
+                      <span style={{ fontSize: 12, color: 'var(--gray-500)', marginLeft: 'auto', fontWeight: 600 }}>{corrGuests.length} assigned guests</span>
                     </div>
-
                     <table className="guest-table mini-headers">
                       <thead>
                         <tr>
@@ -443,17 +497,8 @@ function RoomingPlanTab({ guests, accommodation }) {
                         </tr>
                       </thead>
                       {corridor.rooms.map(room => {
-                        const rg = getRoomGuests(room.id);
-                        if (!showUnavail && room.status === 'unavailable') return null;
-                        if (!showEmpty && rg.length === 0 && room.status !== 'unavailable') return null;
-                        return (
-                          <RoomRows
-                            key={room.id}
-                            room={room}
-                            roomGuests={rg}
-                            groupColorMap={groupColorMap}
-                          />
-                        );
+                        if (room.status === 'unavailable') return null;
+                        return <RoomRows key={room.id} room={room} roomGuests={getRoomGuests(room.id)} groupColorMap={groupColorMap} />;
                       })}
                     </table>
                   </div>
@@ -462,6 +507,85 @@ function RoomingPlanTab({ guests, accommodation }) {
             </div>
           );
         })}
+      </div>
+
+      {/* ── Print view: group-filtered floors, empty rooms hidden, non-group rooms anonymised ── */}
+      <div className="rp-print-only rp-plan">
+        {accommodation.floors
+          .filter(floor => {
+            // When group filter active: only floors that have at least 1 guest from the group
+            if (filterGroup === 'all') return true;
+            return guests.some(g => g.roomId && g.group === filterGroup &&
+              floor.corridors.some(c => c.rooms.some(r => r.id === g.roomId)));
+          })
+          .map(floor => {
+            const floorGroupGuests = filterGroup === 'all'
+              ? guests.filter(g => g.roomId && floor.corridors.some(c => c.rooms.some(r => r.id === g.roomId)))
+              : guests.filter(g => g.roomId && g.group === filterGroup && floor.corridors.some(c => c.rooms.some(r => r.id === g.roomId)));
+            const floorAgeR = ageRange(floorGroupGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA'));
+            return (
+              <div key={floor.id} className="rp-floor-section">
+                <div className="rp-floor-header">
+                  <span className="rp-floor-title">Floor {floor.number}</span>
+                  {floorAgeR && (
+                    <span className="age-range-pill large">
+                      Age range: {floorAgeR.min === floorAgeR.max ? `${floorAgeR.min}` : `${floorAgeR.min}–${floorAgeR.max}`} years
+                    </span>
+                  )}
+                  <span className="rp-floor-count">{floorGroupGuests.length} guests</span>
+                </div>
+                {floor.corridors.map(corridor => {
+                  const allCorrOccupied = guests.filter(g => g.roomId && corridor.rooms.some(r => r.id === g.roomId));
+                  if (allCorrOccupied.length === 0) return null;
+                  const corrGroupGuests = filterGroup === 'all' ? allCorrOccupied : allCorrOccupied.filter(g => g.group === filterGroup);
+                  const corrStudents = corrGroupGuests.filter(g => g.role !== 'GL' && g.role !== 'LiA');
+                  const corrAgeR = ageRange(corrStudents);
+                  return (
+                    <div key={corridor.id} className="rp-corridor-section" style={{ marginBottom: 32 }}>
+                      <div className="rp-corridor-header" style={{ marginBottom: 10, background: 'var(--gray-100)', padding: '6px 16px', borderRadius: 8, display: 'flex', alignItems: 'center' }}>
+                        <span className="rp-corridor-label" style={{ fontWeight: 800, color: 'var(--gray-700)' }}>Corridor {corridor.name}</span>
+                        {corrAgeR && <AgeRangePill guests={corrStudents} style={{ marginLeft: 12 }} />}
+                        <span style={{ fontSize: 12, color: 'var(--gray-500)', marginLeft: 'auto', fontWeight: 600 }}>{allCorrOccupied.length} assigned guests</span>
+                      </div>
+                      <table className="guest-table mini-headers">
+                        <thead>
+                          <tr>
+                            <th style={{ width: 60, textAlign: 'center', padding: '2px 4px', fontSize: 10 }}>Room</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Guest</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Sex</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Age</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Group</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Arrival</th>
+                            <th style={{ padding: '2px 8px', fontSize: 10 }}>Departure</th>
+                          </tr>
+                        </thead>
+                        {corridor.rooms.map(room => {
+                          if (room.status === 'unavailable') return null;
+                          const allRoomGuests = guests.filter(g => g.roomId === room.id);
+                          if (allRoomGuests.length === 0) return null;
+                          const groupRoomGuests = filterGroup === 'all' ? allRoomGuests : allRoomGuests.filter(g => g.group === filterGroup);
+                          if (filterGroup !== 'all' && groupRoomGuests.length === 0) {
+                            // Occupied by other group — show anonymised
+                            return (
+                              <tbody key={room.id} style={{ borderBottom: '1px solid var(--gray-200)' }}>
+                                <tr>
+                                  <td style={{ textAlign: 'center', width: 60, borderRight: '1px solid var(--gray-200)', background: 'var(--gray-50)', fontWeight: 800, padding: '2px 4px' }}>{room.number}</td>
+                                  <td colSpan={6} style={{ padding: '2px 16px', color: 'var(--gray-400)', fontStyle: 'italic', fontSize: 12 }}>
+                                    Occupied — {allRoomGuests.length} {allRoomGuests.length === 1 ? 'guest' : 'guests'}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            );
+                          }
+                          return <RoomRows key={room.id} room={room} roomGuests={groupRoomGuests} groupColorMap={groupColorMap} />;
+                        })}
+                      </table>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
       </div>
     </>
   );
@@ -472,7 +596,7 @@ function RoomingPlanTab({ guests, accommodation }) {
 ═══════════════════════════════════════════════ */
 export default function StepExport() {
   const { state, dispatch } = useApp();
-  const { guests, accommodation, auditLog, currentUser } = state;
+  const { guests, accommodation, auditLog, currentUser, rules } = state;
   const [tab, setTab] = useState('export');
 
   return (
@@ -506,8 +630,8 @@ export default function StepExport() {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        {tab === 'export' && <ExportTab guests={guests} accommodation={accommodation} />}
-        {tab === 'plan'   && <RoomingPlanTab guests={guests} accommodation={accommodation} />}
+        {tab === 'export' && <ExportTab guests={guests} accommodation={accommodation} rules={rules} />}
+        {tab === 'plan'   && <RoomingPlanTab guests={guests} accommodation={accommodation} accommodationName={accommodation.name} />}
         {tab === 'audit'  && (
           <AuditLogTab 
             auditLog={auditLog} 
