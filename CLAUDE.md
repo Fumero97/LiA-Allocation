@@ -1,9 +1,11 @@
 # Project context
 
 - Vite + React 19 frontend (JSX, no TypeScript)
-- No backend yet — Firebase file exists (src/firebase.js) but is NOT integrated
-- Do not use or reference Firebase unless explicitly asked
-- Priority: stable, consistent frontend before any backend work
+- Firebase IS integrated (src/firebase.js): used for auth/login, centre selection, and per-centre app-state sync (Firestore)
+- Persistence model: Firestore (per centre, keyed by centerId) is the source of truth in production; localStorage is the immediate local mirror. App state runs deployed/remote — local dev is for code changes that get pushed
+- Saving an allocation writes to Firestore immediately (other changes are debounced ~2s); writes are also flushed on pagehide so a refresh never drops a pending write
+- A monotonic `__stamp` is stored alongside the state in both localStorage and Firestore. On mount the remote snapshot is merged (MERGE_REMOTE_STATE) ONLY if `remote.__stamp` is newer than the local stamp — this prevents a stale remote from clobbering freshly-saved local data. Keep this guard if you touch persistence in src/store.jsx
+- Priority: keep persistence reliable (no data loss on refresh)
 
 # Stack
 

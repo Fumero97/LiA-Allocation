@@ -663,31 +663,73 @@ export function AppProvider({ children, centerId = null }) {
     return initialState;
   };
 
+  const stampKey = `${localKey}_stamp`;
+
   const [state, dispatch] = useReducer(reducer, undefined, loadLocal);
   const saveTimer = useRef(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const prevSavedRef = useRef(state.savedAllocations);
+  // Monotonic "last modified" stamp shared between localStorage and Firestore,
+  // so a stale remote snapshot can never clobber newer local data on mount.
+  const stampRef = useRef(Number(localStorage.getItem(stampKey)) || 0);
+  const mountStampRef = useRef(stampRef.current);
+  const firstRun = useRef(true);
 
-  // Save to localStorage on every change
+  // Persist to localStorage on every change, advancing the modification stamp.
+  // Skip the first run: we just hydrated from localStorage, nothing changed yet.
   useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    stampRef.current = Date.now();
     localStorage.setItem(localKey, JSON.stringify(state));
-  }, [state, localKey]);
+    localStorage.setItem(stampKey, String(stampRef.current));
+  }, [state, localKey, stampKey]);
 
-  // Load from Firestore on mount (if centerId provided)
+  // Load from Firestore on mount — adopt the remote state only if it is newer
+  // than what this browser already has locally.
   useEffect(() => {
     if (!centerId) return;
     loadCenterState(centerId).then(remote => {
-      if (remote) dispatch({ type: 'MERGE_REMOTE_STATE', payload: remote });
+      if (!remote) return;
+      const remoteStamp = remote.__stamp || 0;
+      if (remoteStamp > mountStampRef.current) {
+        const { __stamp, ...payload } = remote;
+        dispatch({ type: 'MERGE_REMOTE_STATE', payload });
+      }
     });
   }, [centerId]);
 
-  // Debounced Firestore save (if centerId provided)
+  // Firestore save: immediate when allocations change (save/delete), debounced otherwise.
+  // Also flushed before the page unloads so a refresh never drops a pending write.
+  // The mount run is skipped so we never push stale local state before the merge above.
+  const firstSaveRun = useRef(true);
   useEffect(() => {
     if (!centerId) return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      const toSave = Object.fromEntries(Object.entries(state).filter(([k]) => !UI_KEYS.includes(k)));
+    if (firstSaveRun.current) { firstSaveRun.current = false; return; }
+
+    const flush = () => {
+      clearTimeout(saveTimer.current);
+      const s = stateRef.current;
+      const toSave = Object.fromEntries(Object.entries(s).filter(([k]) => !UI_KEYS.includes(k)));
+      toSave.__stamp = stampRef.current;
       saveCenterState(centerId, toSave);
-    }, 2000);
-    return () => clearTimeout(saveTimer.current);
+    };
+
+    const allocationsChanged = state.savedAllocations !== prevSavedRef.current;
+    prevSavedRef.current = state.savedAllocations;
+
+    if (allocationsChanged) {
+      flush(); // write immediately when an allocation is saved or deleted
+    } else {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(flush, 2000);
+    }
+
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      clearTimeout(saveTimer.current);
+    };
   }, [state, centerId]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
