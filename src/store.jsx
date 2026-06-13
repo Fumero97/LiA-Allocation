@@ -673,7 +673,6 @@ export function AppProvider({ children, centerId = null }) {
   // Monotonic "last modified" stamp shared between localStorage and Firestore,
   // so a stale remote snapshot can never clobber newer local data on mount.
   const stampRef = useRef(Number(localStorage.getItem(stampKey)) || 0);
-  const mountStampRef = useRef(stampRef.current);
   const firstRun = useRef(true);
 
   // Persist to localStorage on every change, advancing the modification stamp.
@@ -692,9 +691,11 @@ export function AppProvider({ children, centerId = null }) {
     loadCenterState(centerId).then(remote => {
       if (!remote) return;
       const remoteStamp = remote.__stamp || 0;
-      // Adopt remote unless local is STRICTLY newer (a save not yet synced to
-      // remote). `>=` ensures legacy/unstamped remote docs still load.
-      if (remoteStamp >= mountStampRef.current) {
+      // Compare against the LIVE local stamp (not a value frozen at mount) so a
+      // late-arriving remote load cannot clobber a save made while it was in
+      // flight. Adopt remote unless local is STRICTLY newer; `>=` keeps
+      // legacy/unstamped remote docs (stamp 0) loading.
+      if (remoteStamp >= stampRef.current) {
         const { __stamp, ...payload } = remote;
         dispatch({ type: 'MERGE_REMOTE_STATE', payload });
       }
