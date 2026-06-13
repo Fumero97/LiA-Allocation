@@ -1,6 +1,6 @@
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAYrbqnsgwzMuEqktGxzceS0shbRbGPw3A",
@@ -13,7 +13,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// ignoreUndefinedProperties: a single `undefined` anywhere in the state would
+// otherwise make setDoc reject the ENTIRE document, silently losing the save.
+export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
 
 // ── Center app state ──────────────────────────────────────
 export const loadCenterState = async (centerId) => {

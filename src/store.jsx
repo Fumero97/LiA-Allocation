@@ -649,8 +649,10 @@ function reducer(state, action) {
   }
 }
 
-// Keys excluded from cloud sync (transient UI state)
-const UI_KEYS = ['activeTab', 'listImproverTarget', 'isEditingAccommodation', 'editingAllocationId', 'currentStep', 'selectedAccommodationId'];
+// Keys excluded from cloud sync: transient UI state, plus the undo/redo stacks.
+// undoStack/redoStack hold arrays of guest arrays — Firestore rejects nested
+// arrays, so writing them would fail the entire document save.
+const UI_KEYS = ['activeTab', 'listImproverTarget', 'isEditingAccommodation', 'editingAllocationId', 'currentStep', 'selectedAccommodationId', 'undoStack', 'redoStack'];
 
 export function AppProvider({ children, centerId = null }) {
   const localKey = centerId ? `allocation_state_${centerId}` : 'allocation_state';
