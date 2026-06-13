@@ -1,6 +1,6 @@
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAYrbqnsgwzMuEqktGxzceS0shbRbGPw3A",
@@ -32,6 +32,21 @@ export const saveCenterState = async (centerId, state) => {
   } catch (e) {
     console.error('saveCenterState:', e);
   }
+};
+
+// Real-time subscription to a centre's app state. The callback receives the
+// remote state (or null) on every server change. Snapshots produced by this
+// client's own un-acknowledged writes are skipped to avoid feedback loops.
+export const subscribeCenterState = (centerId, cb) => {
+  const ref = doc(db, 'centers', centerId, 'appState', 'current');
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      cb(snap.exists() ? snap.data() : null);
+    },
+    (e) => console.error('subscribeCenterState:', e)
+  );
 };
 
 // ── Centers ───────────────────────────────────────────────

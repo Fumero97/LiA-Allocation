@@ -2,10 +2,12 @@
 
 - Vite + React 19 frontend (JSX, no TypeScript)
 - Firebase IS integrated (src/firebase.js): used for auth/login, centre selection, and per-centre app-state sync (Firestore)
-- Persistence model: Firestore (per centre, keyed by centerId) is the source of truth in production; localStorage is the immediate local mirror. App state runs deployed/remote — local dev is for code changes that get pushed
-- Saving an allocation writes to Firestore immediately (other changes are debounced ~2s); writes are also flushed on pagehide so a refresh never drops a pending write
-- A monotonic `__stamp` is stored alongside the state in both localStorage and Firestore. On mount the remote snapshot is merged (MERGE_REMOTE_STATE) unless the local stamp is STRICTLY newer (a save not yet synced). The comparison uses `>=` so legacy/unstamped remote docs (`__stamp` absent → 0) still load. This prevents a stale remote from clobbering freshly-saved local data without blocking normal loads. Keep this guard if you touch persistence in src/store.jsx
-- Priority: keep persistence reliable (no data loss on refresh)
+- Persistence model: Firestore is the SINGLE source of truth, synced in REAL TIME per centre (doc `centers/{centerId}/appState/current`). App state runs deployed/remote — local dev is for code changes that get pushed
+- src/store.jsx subscribes via `subscribeCenterState` (onSnapshot); any remote change dispatches MERGE_REMOTE_STATE so all clients update live. Local changes are written back via `saveCenterState` (debounced ~600ms, flushed on pagehide)
+- localStorage is ONLY a fast first-paint cache (key `allocation_state_{centerId}`); it is never authoritative — the first Firestore snapshot overwrites it
+- Loop prevention: a `fromRemoteRef` flag marks state changes that came from a snapshot so they are NOT echoed back as a write; the snapshot handler also skips `hasPendingWrites` (this client's own un-acked writes). Keep this when touching persistence
+- Concurrency caveat: the whole app state is one Firestore doc → last-write-wins per document. Fine for ~one editor per centre; true simultaneous multi-user editing would need per-entity docs
+- Firestore security rules live in the Firebase console (NOT in the repo); they currently allow any authenticated user read/write
 
 # Stack
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
-import { loadCenterState, saveCenterState } from './firebase';
+import { subscribeCenterState, saveCenterState } from './firebase';
 import { autoAllocate as runAutoAllocate } from './utils/allocation';
 
 const AppContext = createContext(null);
@@ -663,70 +663,47 @@ export function AppProvider({ children, centerId = null }) {
     return initialState;
   };
 
-  const stampKey = `${localKey}_stamp`;
-
   const [state, dispatch] = useReducer(reducer, undefined, loadLocal);
   const saveTimer = useRef(null);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const prevSavedRef = useRef(state.savedAllocations);
-  // Monotonic "last modified" stamp shared between localStorage and Firestore,
-  // so a stale remote snapshot can never clobber newer local data on mount.
-  const stampRef = useRef(Number(localStorage.getItem(stampKey)) || 0);
-  const firstRun = useRef(true);
+  // True when the latest state change came from a remote snapshot, so we must
+  // NOT write it back to Firestore (prevents an infinite snapshot/write loop).
+  const fromRemoteRef = useRef(false);
+  const firstSaveRun = useRef(true);
 
-  // Persist to localStorage on every change, advancing the modification stamp.
-  // Skip the first run: we just hydrated from localStorage, nothing changed yet.
+  // localStorage is only a fast first-paint cache — Firestore is the source of truth.
   useEffect(() => {
-    if (firstRun.current) { firstRun.current = false; return; }
-    stampRef.current = Date.now();
-    localStorage.setItem(localKey, JSON.stringify(state));
-    localStorage.setItem(stampKey, String(stampRef.current));
-  }, [state, localKey, stampKey]);
+    try { localStorage.setItem(localKey, JSON.stringify(state)); } catch {}
+  }, [state, localKey]);
 
-  // Load from Firestore on mount — adopt the remote state only if it is newer
-  // than what this browser already has locally.
+  // Real-time source of truth: subscribe to the centre's app state. Any change
+  // made by anyone (or this client, once acknowledged) flows back here live.
   useEffect(() => {
     if (!centerId) return;
-    loadCenterState(centerId).then(remote => {
+    return subscribeCenterState(centerId, (remote) => {
       if (!remote) return;
-      const remoteStamp = remote.__stamp || 0;
-      // Compare against the LIVE local stamp (not a value frozen at mount) so a
-      // late-arriving remote load cannot clobber a save made while it was in
-      // flight. Adopt remote unless local is STRICTLY newer; `>=` keeps
-      // legacy/unstamped remote docs (stamp 0) loading.
-      if (remoteStamp >= stampRef.current) {
-        const { __stamp, ...payload } = remote;
-        dispatch({ type: 'MERGE_REMOTE_STATE', payload });
-      }
+      fromRemoteRef.current = true;
+      dispatch({ type: 'MERGE_REMOTE_STATE', payload: remote });
     });
   }, [centerId]);
 
-  // Firestore save: immediate when allocations change (save/delete), debounced otherwise.
-  // Also flushed before the page unloads so a refresh never drops a pending write.
-  // The mount run is skipped so we never push stale local state before the merge above.
-  const firstSaveRun = useRef(true);
+  // Push local changes to Firestore (debounced; flushed before the page unloads).
+  // Skips the first run (just hydrated) and any change originating from a remote
+  // snapshot, so remote updates are never echoed back into a write loop.
   useEffect(() => {
     if (!centerId) return;
     if (firstSaveRun.current) { firstSaveRun.current = false; return; }
+    if (fromRemoteRef.current) { fromRemoteRef.current = false; return; }
 
     const flush = () => {
       clearTimeout(saveTimer.current);
-      const s = stateRef.current;
-      const toSave = Object.fromEntries(Object.entries(s).filter(([k]) => !UI_KEYS.includes(k)));
-      toSave.__stamp = stampRef.current;
+      const toSave = Object.fromEntries(Object.entries(stateRef.current).filter(([k]) => !UI_KEYS.includes(k)));
       saveCenterState(centerId, toSave);
     };
 
-    const allocationsChanged = state.savedAllocations !== prevSavedRef.current;
-    prevSavedRef.current = state.savedAllocations;
-
-    if (allocationsChanged) {
-      flush(); // write immediately when an allocation is saved or deleted
-    } else {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(flush, 2000);
-    }
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(flush, 600);
 
     window.addEventListener('pagehide', flush);
     return () => {
