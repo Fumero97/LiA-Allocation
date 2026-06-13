@@ -692,7 +692,9 @@ export function AppProvider({ children, centerId = null }) {
     loadCenterState(centerId).then(remote => {
       if (!remote) return;
       const remoteStamp = remote.__stamp || 0;
-      if (remoteStamp > mountStampRef.current) {
+      // Adopt remote unless local is STRICTLY newer (a save not yet synced to
+      // remote). `>=` ensures legacy/unstamped remote docs still load.
+      if (remoteStamp >= mountStampRef.current) {
         const { __stamp, ...payload } = remote;
         dispatch({ type: 'MERGE_REMOTE_STATE', payload });
       }

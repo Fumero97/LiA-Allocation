@@ -4,7 +4,7 @@
 - Firebase IS integrated (src/firebase.js): used for auth/login, centre selection, and per-centre app-state sync (Firestore)
 - Persistence model: Firestore (per centre, keyed by centerId) is the source of truth in production; localStorage is the immediate local mirror. App state runs deployed/remote — local dev is for code changes that get pushed
 - Saving an allocation writes to Firestore immediately (other changes are debounced ~2s); writes are also flushed on pagehide so a refresh never drops a pending write
-- A monotonic `__stamp` is stored alongside the state in both localStorage and Firestore. On mount the remote snapshot is merged (MERGE_REMOTE_STATE) ONLY if `remote.__stamp` is newer than the local stamp — this prevents a stale remote from clobbering freshly-saved local data. Keep this guard if you touch persistence in src/store.jsx
+- A monotonic `__stamp` is stored alongside the state in both localStorage and Firestore. On mount the remote snapshot is merged (MERGE_REMOTE_STATE) unless the local stamp is STRICTLY newer (a save not yet synced). The comparison uses `>=` so legacy/unstamped remote docs (`__stamp` absent → 0) still load. This prevents a stale remote from clobbering freshly-saved local data without blocking normal loads. Keep this guard if you touch persistence in src/store.jsx
 - Priority: keep persistence reliable (no data loss on refresh)
 
 # Stack
