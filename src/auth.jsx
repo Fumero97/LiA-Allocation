@@ -3,6 +3,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -41,10 +42,13 @@ export function AuthProvider({ children }) {
     return cred;
   };
 
+  const resetPassword = (email) =>
+    sendPasswordResetEmail(auth, email);
+
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, signup, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

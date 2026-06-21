@@ -3,16 +3,19 @@ import { useAuth } from '../auth';
 import liaLogo from '../assets/lia-logo.png';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const [email, setEmail]     = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]     = useState('');
+  const [info, setInfo]       = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
     try {
       await login(email, password);
@@ -24,6 +27,30 @@ export default function LoginPage() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Enter your email above, then click “Forgot password?” to receive a reset link.');
+      return;
+    }
+    setResetting(true);
+    try {
+      await resetPassword(email.trim());
+      setInfo(`Reset link sent to ${email.trim()}. Check your inbox (and spam folder).`);
+    } catch (err) {
+      setError(
+        err.code === 'auth/invalid-email'
+          ? 'That email address is not valid.'
+          : err.code === 'auth/user-not-found'
+          ? 'No account found with that email.'
+          : err.message
+      );
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -61,11 +88,27 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+            <div style={{ textAlign: 'right', marginTop: 6 }}>
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={resetting}
+                style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: '#2563eb', cursor: resetting ? 'not-allowed' : 'pointer' }}
+              >
+                {resetting ? 'Sending link…' : 'Forgot password?'}
+              </button>
+            </div>
           </div>
 
           {error && (
             <div style={{ padding: '10px 14px', background: '#fef2f2', color: '#dc2626', borderRadius: 8, fontSize: 13, border: '1px solid #fecaca' }}>
               {error}
+            </div>
+          )}
+
+          {info && (
+            <div style={{ padding: '10px 14px', background: '#f0fdf4', color: '#16a34a', borderRadius: 8, fontSize: 13, border: '1px solid #bbf7d0' }}>
+              {info}
             </div>
           )}
 

@@ -576,21 +576,27 @@ export default function StepAllocation() {
   const selectedIsPool = selectedGuest ? selectedGuest.roomId == null : false;
 
   const compatibleRoomIds = useMemo(() => {
-    if (!selectedId || !selectedIsPool) return new Set();
+    if (!selectedId) return new Set();
     const ids = new Set();
     accommodation.floors.forEach(floor =>
       floor.corridors.forEach(corridor =>
         corridor.rooms.forEach(room => {
           if (room.status === 'unavailable') return;
           const occupants = decoratedGuests.filter(g => g.roomId === room.id);
-          if (occupants.length > 0) return;
-          if (occupants.length >= room.capacity) return;
+          if (selectedIsPool) {
+            // Pool guest: suggest only completely empty rooms (existing behavior)
+            if (occupants.length > 0) return;
+          } else {
+            // Assigned guest: any room with a free spot, excluding their current room
+            if (room.id === selectedGuest?.roomId) return;
+            if (occupants.length >= room.capacity) return;
+          }
           ids.add(room.id);
         })
       )
     );
     return ids;
-  }, [selectedId, selectedIsPool, decoratedGuests, accommodation]);
+  }, [selectedId, selectedIsPool, selectedGuest, decoratedGuests, accommodation]);
 
   // Guests matching all active filters — null means no filter active
   const filteredGuestIds = useMemo(() => {
@@ -632,7 +638,7 @@ export default function StepAllocation() {
   };
 
   const handleRoomClick = (roomId) => {
-    if (!selectedId || !selectedIsPool) return;
+    if (!selectedId) return;
     dispatch({ type: 'ASSIGN_ROOM', guestId: selectedId, roomId });
     setSelectedId(null);
   };
@@ -767,7 +773,7 @@ export default function StepAllocation() {
             <div className="swap-hint">
               {selectedIsPool
                 ? <>Click a <span style={{ color: '#16a34a', fontWeight: 700 }}>green</span> room to assign <strong>{selectedGuest?.name}</strong></>
-                : <>Click a guest to swap with <strong>{selectedGuest?.name}</strong></>
+                : <>Click a guest to swap, or a <span style={{ color: '#16a34a', fontWeight: 700 }}>green</span> room to move <strong>{selectedGuest?.name}</strong></>
               }
               <button className="btn btn-ghost btn-xs" onClick={() => setSelectedId(null)} style={{ marginLeft: 8 }}>✕ ESC</button>
             </div>
