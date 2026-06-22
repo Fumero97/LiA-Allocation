@@ -3,6 +3,9 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp } from '../../store';
 import { checkViolations } from '../../utils/allocation';
 import { AGE_BANDS, getAgeBand } from '../../utils/ageBands';
+import AllocationChat from '../AllocationChat';
+import AllocationDiffView from '../AllocationDiffView';
+import { applyOperationsToStore } from '../../lib/allocationChat';
 
 const ADULT_AGE = 18;
 
@@ -455,6 +458,16 @@ export default function StepAllocation() {
   const [editingGuest, setEditingGuest]   = useState(null);
   const [twPanelOpen, setTwPanelOpen]     = useState(true);
   const [collapsedCorridors, setCollapsedCorridors] = useState(new Set());
+  const [chatOpen, setChatOpen]           = useState(false);
+  const [proposal, setProposal]           = useState(null);
+
+  const confirmProposal = () => {
+    if (!proposal) return;
+    applyOperationsToStore(proposal.operations, dispatch, guests);
+    setProposal(null);
+    setSavedFlash('Modifiche dell’assistente applicate');
+    setTimeout(() => setSavedFlash(''), 3000);
+  };
 
   const toggleCorridor = id => setCollapsedCorridors(prev => {
     const next = new Set(prev);
@@ -712,6 +725,10 @@ export default function StepAllocation() {
             🗑 Clear
           </button>
 
+          <button className={`btn btn-sm ${chatOpen ? 'btn-primary' : 'btn-outline'}`} onClick={() => setChatOpen(v => !v)} title="Assistente AI per l'allocazione">
+            🤖 Assistente
+          </button>
+
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => dispatch({ type: 'UNDO' })}
@@ -825,6 +842,17 @@ export default function StepAllocation() {
         )}
 
         <div className="allocation-body">
+          {proposal ? (
+            <AllocationDiffView
+              accommodation={accommodation}
+              currentGuests={guests}
+              proposedGuests={proposal.proposedGuests}
+              summary={proposal.summary}
+              chatOpen={chatOpen}
+              onConfirm={confirmProposal}
+              onDiscard={() => setProposal(null)}
+            />
+          ) : (
           <>
             {decoratedGuests.some(g => !g.roomId) && (
                 <aside className="guest-pool-panel">
@@ -950,7 +978,16 @@ export default function StepAllocation() {
                 ))}
               </div>
           </>
+          )}
         </div>
+
+        {chatOpen && (
+          <AllocationChat
+            state={state}
+            onProposal={setProposal}
+            onClose={() => setChatOpen(false)}
+          />
+        )}
       </div>
 
       {showSaveModal && (
